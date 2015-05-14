@@ -1,0 +1,3 @@
+#!/bin/bash
+apt-get purge netext73 -y
+exit 0
