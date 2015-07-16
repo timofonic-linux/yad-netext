@@ -17,9 +17,13 @@
  * Copyright (C) 2008-2015, Victor Ananjevsky <ananasik@gmail.com>
  */
 
-#include "yad.h"
+#include <limits.h>
+#include <stdlib.h>
 
+#include <glib/gprintf.h>
 #include <webkit/webkit.h>
+
+#include "yad.h"
 
 static WebKitWebView *view;
 
@@ -79,20 +83,22 @@ static gboolean
 link_cb (WebKitWebView *v, WebKitWebFrame *f, WebKitNetworkRequest *r,
          WebKitWebNavigationAction *act, WebKitWebPolicyDecision *pd, gpointer d)
 {
-  gchar *uri;
+  gchar *uri = (gchar *) webkit_network_request_get_uri (r);
 
-  if (!is_loaded)
-    return FALSE;
-
-  uri = (gchar *) webkit_network_request_get_uri (r);
-  if (options.html_data.print_uri)
-    g_printf ("%s\n", uri);
-  else
+  if (is_loaded && !options.html_data.browser)
     {
-      gchar *cmd = g_strdup_printf ("xdg-open '%s'", uri);
-      g_spawn_command_line_async (cmd, NULL);
-      g_free (cmd);
+      if (options.html_data.print_uri)
+        g_printf ("%s\n", uri);
+      else
+        {
+          gchar *cmd = g_strdup_printf ("xdg-open '%s'", uri);
+          g_spawn_command_line_async (cmd, NULL);
+          g_free (cmd);
+        }
+      webkit_web_policy_decision_ignore (pd);
     }
+  else
+    webkit_web_policy_decision_use (pd);
 
   return TRUE;
 }
@@ -130,6 +136,7 @@ select_file_cb (GtkEntry *entry, GtkEntryIconPosition pos, GdkEventButton *ev, g
       gtk_entry_set_text (entry, uri);
       g_free (uri);
 
+      /* keep current dir */
       g_free (dir);
       dir = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (dlg));
     }
@@ -200,13 +207,6 @@ menu_cb (WebKitWebView *view, GtkWidget *menu, WebKitHitTestResult *hit,
 }
 
 static gboolean
-ready_cb (WebKitWebView *v, gpointer d)
-{
-  gtk_widget_grab_focus (GTK_WIDGET (v));
-  return FALSE;
-}
-
-static gboolean
 handle_stdin (GIOChannel *ch, GIOCondition cond, gpointer d)
 {
   gchar *buf;
@@ -239,31 +239,35 @@ GtkWidget *
 html_create_widget (GtkWidget *dlg)
 {
   GtkWidget *sw;
+  WebKitWebSettings *settings;
   SoupSession *sess;
+  const gchar *enc;
 
   sw = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
   view = WEBKIT_WEB_VIEW (webkit_web_view_new ());
   gtk_container_add (GTK_CONTAINER (sw), GTK_WIDGET (view));
+  
+  settings = webkit_web_view_get_settings (view);
+  g_get_charset (&enc);
+  g_object_set (G_OBJECT (settings), "default-encoding", enc);
 
   g_signal_connect (view, "hovering-over-link", G_CALLBACK (link_hover_cb), NULL);
-  g_signal_connect (view, "web-view-ready", G_CALLBACK (ready_cb), NULL);
+  g_signal_connect (view, "navigation-policy-decision-requested", G_CALLBACK (link_cb), NULL);
 
   if (options.html_data.browser)
     g_signal_connect (view, "context-menu", G_CALLBACK (menu_cb), NULL);
   else
-    {
-      g_signal_connect (view, "document-load-finished", G_CALLBACK (loaded_cb), NULL);
-      g_signal_connect (view, "navigation-policy-decision-requested", G_CALLBACK (link_cb), NULL);
-    }
+    g_signal_connect (view, "document-load-finished", G_CALLBACK (loaded_cb), NULL);
 
   sess = webkit_get_default_session ();
   soup_session_add_feature_by_type (sess, SOUP_TYPE_PROXY_RESOLVER_DEFAULT);
   g_object_set (G_OBJECT (sess), SOUP_SESSION_ACCEPT_LANGUAGE_AUTO, TRUE, NULL);
 
   gtk_widget_show_all (sw);
-
+  gtk_widget_grab_focus (GTK_WIDGET (view));
+  
   if (options.html_data.uri)
     load_uri (options.html_data.uri);
   else if (!options.html_data.browser)

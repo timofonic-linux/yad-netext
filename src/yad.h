@@ -176,6 +176,7 @@ typedef struct {
   GSList *buttons;
   gboolean no_buttons;
   gboolean no_markup;
+  gboolean no_escape;
   gboolean always_print;
   gboolean selectable_labels;
   GtkButtonBoxStyle buttons_layout;
@@ -487,12 +488,6 @@ void write_settings (void);
 
 GdkPixbuf *get_pixbuf (gchar * name, YadIconSize size);
 
-#ifdef __clang__
-extern inline void strip_new_line (gchar * str);
-#else
-inline void strip_new_line (gchar * str);
-#endif
-
 gchar **split_arg (const gchar * str);
 
 YadNTabs *get_tabs (key_t key, gboolean create);
@@ -500,6 +495,14 @@ YadNTabs *get_tabs (key_t key, gboolean create);
 GtkWidget *get_label (gchar *str, guint border);
 
 char *escape_str (char *str);
+
+static inline void
+strip_new_line (gchar * str) {
+  gint nl = strlen (str) - 1;
+
+  if (str[nl] == '\n')
+    str[nl] = '\0';
+}
 
 G_END_DECLS
 

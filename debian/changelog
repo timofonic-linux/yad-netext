@@ -1,5 +1,11 @@
+yad (0.29.1) vivid; urgency=medium
+ 
+  * release 0.29.0
+ 
+ -- NetBit73 <netbit73@gmail.com>  Thu, 12 Mar 2015 15:22:17 +0300
+
 yad (0.28.2) vivid; urgency=medium
  
-  * New upstream bugfix release
+  * release 0.28.1
  
  -- NetBit73 <netbit73@gmail.com>  Thu, 12 Mar 2015 15:22:17 +0300
