@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with YAD. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2008-2014, Victor Ananjevsky <ananasik@gmail.com>
+ * Copyright (C) 2008-2015, Victor Ananjevsky <ananasik@gmail.com>
  */
 
 #include <stdlib.h>
@@ -251,7 +251,7 @@ get_tabs (key_t key, gboolean create)
     }
 
   /* attach shared memory */
-  if ((t = shmat (shmid, NULL, 0)) == (YadNTabs *) -1)
+  if ((t = shmat (shmid, NULL, 0)) == (YadNTabs *) - 1)
     {
       g_printerr ("yad: cannot attach shared memory for key %ld: %s\n", key, strerror (errno));
       return NULL;
@@ -272,7 +272,7 @@ get_tabs (key_t key, gboolean create)
 }
 
 GtkWidget *
-get_label (gchar *str, guint border)
+get_label (gchar * str, guint border)
 {
   GtkWidget *a, *t, *i, *l;
   GtkStockItem it;
@@ -338,17 +338,17 @@ get_label (gchar *str, guint border)
   return a;
 }
 
-char *
-escape_str (char *str)
+gchar *
+escape_str (gchar *str)
 {
-  char *res, *buf = str;
-  unsigned i = 0, len;
+  gchar *res, *buf = str;
+  guint i = 0, len;
 
   if (!str)
     return NULL;
 
   len = strlen (str);
-  res = (char *) calloc (len + 1, sizeof (char));
+  res = (gchar *) calloc (len + 1, sizeof (gchar));
 
   while (*buf)
     {
@@ -356,13 +356,13 @@ escape_str (char *str)
         {
         case '\n':
           len += 1;
-          res = (char *) realloc (res, len + 1);
+          res = (gchar *) realloc (res, len + 1);
           strcpy (res + i, "\\n");
           i += 2;
           break;
         case '\t':
           len += 1;
-          res = (char *) realloc (res, len + 1);
+          res = (gchar *) realloc (res, len + 1);
           strcpy (res + i, "\\t");
           i += 2;
           break;

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with YAD. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2008-2014, Victor Ananjevsky <ananasik@gmail.com>
+ * Copyright (C) 2008-2015, Victor Ananjevsky <ananasik@gmail.com>
  */
 
 #include <sys/types.h>
@@ -29,7 +29,6 @@
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 #include <gdk/gdk.h>
-#include <gdk/gdkx.h>
 
 #include "yad.h"
 
@@ -42,7 +41,7 @@ notebook_create_widget (GtkWidget * dlg)
   GSList *tab;
 
   /* get shared memory */
-  tabs = get_tabs (options.notebook_data.key, TRUE);
+  tabs = get_tabs (options.common_data.key, TRUE);
   if (!tabs)
     exit (-1);
 

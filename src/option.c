@@ -38,6 +38,7 @@ static gboolean set_tab_pos (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_scale_value (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_ellipsize (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_expander (const gchar *, const gchar *, gpointer, GError **);
+static gboolean set_orient (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_print_type (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_progress_log (const gchar *, const gchar *, gpointer, GError **);
 #ifndef G_OS_WIN32
@@ -62,6 +63,7 @@ static gboolean list_mode = FALSE;
 static gboolean multi_progress_mode = FALSE;
 static gboolean notebook_mode = FALSE;
 static gboolean notification_mode = FALSE;
+static gboolean paned_mode = FALSE;
 static gboolean print_mode = FALSE;
 static gboolean progress_mode = FALSE;
 static gboolean scale_mode = FALSE;
@@ -270,6 +272,12 @@ static GOptionEntry general_options[] = {
    N_("Tab nubmer of this dialog"),
    N_("NUMBER")},
 #ifndef G_OS_WIN32
+  {"parent-win", 0,
+   0,
+   G_OPTION_ARG_INT,
+   &options.parent,
+   N_("XID of parent window"),
+   "XID"},
   {"kill-parent", 0,
    G_OPTION_FLAG_OPTIONAL_ARG,
    G_OPTION_ARG_CALLBACK,
@@ -922,9 +930,9 @@ static GOptionEntry notebook_options[] = {
    N_("Display notebook dialog"),
    NULL},
   {"key", 0,
-   0,
+   G_OPTION_FLAG_NOALIAS,
    G_OPTION_ARG_INT,
-   &options.notebook_data.key,
+   &options.common_data.key,
    N_("Identifier of embedded dialogs"),
    N_("KEY")},
   {"tab", 0,
@@ -997,6 +1005,34 @@ static GOptionEntry notification_options[] = {
    &options.notification_data.hidden,
    N_("Doesn't show icon at startup"),
    NULL},
+  {NULL}
+};
+
+static GOptionEntry paned_options[] = {
+  {"paned", 0,
+   G_OPTION_FLAG_IN_MAIN,
+   G_OPTION_ARG_NONE,
+   &paned_mode,
+   N_("Display paned dialog"),
+   NULL},
+  {"orient", 0,
+   0,
+   G_OPTION_ARG_CALLBACK,
+   set_orient,
+   N_("Set orientation (TYPE - hor[izontal] or vert[ical])"),
+   N_("TYPE")},
+  {"splitter", 0,
+   0,
+   G_OPTION_ARG_INT,
+   &options.paned_data.splitter,
+   N_("Set initial splitter position"),
+   N_("POS")},
+  {"key", 0,
+   G_OPTION_FLAG_NOALIAS,
+   G_OPTION_ARG_INT,
+   &options.common_data.key,
+   N_("Identifier of embedded dialogs"),
+   N_("KEY")},
   {NULL}
 };
 
@@ -1250,6 +1286,12 @@ static GOptionEntry text_options[] = {
    &options.text_data.uri,
    N_("Make URI clickable"),
    NULL},
+  {"uri-color", 0,
+   0,
+   G_OPTION_ARG_STRING,
+   &options.text_data.uri_color,
+   N_("Use specified color for links"),
+   N_("COLOR")},
   {"listen", 0,
    G_OPTION_FLAG_NOALIAS,
    G_OPTION_ARG_NONE,
@@ -1522,7 +1564,7 @@ set_color_mode (const gchar * option_name, const gchar * value, gpointer data, G
 {
   if (strcasecmp (value, "hex") == 0)
     options.color_data.mode = YAD_COLOR_HEX;
-  else if(strcasecmp (value, "rgb") == 0)
+  else if (strcasecmp (value, "rgb") == 0)
     options.color_data.mode = YAD_COLOR_RGB;
   else
     g_printerr (_("Unknown color mode: %s\n"), value);
@@ -1635,6 +1677,19 @@ set_ellipsize (const gchar * option_name, const gchar * value, gpointer data, GE
 }
 
 static gboolean
+set_orient (const gchar * option_name, const gchar * value, gpointer data, GError ** err)
+{
+  if (strncasecmp (value, "hor", 3) == 3)
+    options.paned_data.orient = GTK_ORIENTATION_HORIZONTAL;
+  else if (strncasecmp (value, "vert", 4) == 0)
+    options.print_data.type = GTK_ORIENTATION_VERTICAL;
+  else
+    g_printerr (_("Unknown orientation: %s\n"), value);
+
+  return TRUE;
+}
+
+static gboolean
 set_print_type (const gchar * option_name, const gchar * value, gpointer data, GError ** err)
 {
   if (strcasecmp (value, "text") == 0)
@@ -1726,8 +1781,7 @@ parse_signal (const gchar * option_name, const gchar * value, gpointer data, GEr
       else if (strcmp (value + ofst, "STKFLT") == 0)
         sn = SIGSTKFLT;
 #endif
-      else if (strcmp (value + ofst, "CHLD") == 0 ||
-               strcmp (value + ofst, "CLD") == 0)
+      else if (strcmp (value + ofst, "CHLD") == 0 || strcmp (value + ofst, "CLD") == 0)
         sn = SIGCHLD;
       else if (strcmp (value + ofst, "CONT") == 0)
         sn = SIGCONT;
@@ -1751,8 +1805,7 @@ parse_signal (const gchar * option_name, const gchar * value, gpointer data, GEr
         sn = SIGPROF;
       else if (strcmp (value + ofst, "WINCH") == 0)
         sn = SIGWINCH;
-      else if (strcmp (value + ofst, "IO") == 0 ||
-               strcmp (value + ofst, "POLL") == 0)
+      else if (strcmp (value + ofst, "IO") == 0 || strcmp (value + ofst, "POLL") == 0)
         sn = SIGIO;
 #ifdef SIGPWR
       else if (strcmp (value + ofst, "PWR") == 0)
@@ -1802,6 +1855,8 @@ yad_set_mode (void)
     options.mode = YAD_MODE_NOTEBOOK;
   else if (notification_mode)
     options.mode = YAD_MODE_NOTIFICATION;
+  else if (paned_mode)
+    options.mode = YAD_MODE_PANED;
   else if (print_mode)
     options.mode = YAD_MODE_PRINT;
   else if (progress_mode)
@@ -1825,6 +1880,7 @@ yad_options_init (void)
   options.extra_data = NULL;
   options.gtkrc_file = NULL;
 #ifndef G_OS_WIN32
+  options.parent = 0;
   options.kill_parent = 0;
   options.print_xid = FALSE;
 #endif
@@ -1884,6 +1940,7 @@ yad_options_init (void)
   options.common_data.listen = FALSE;
   options.common_data.preview = FALSE;
   options.common_data.quoted_output = FALSE;
+  options.common_data.key = -1;
 
   /* Initialize calendar data */
   options.calendar_data.day = -1;
@@ -1972,12 +2029,15 @@ yad_options_init (void)
   options.notebook_data.tabs = NULL;
   options.notebook_data.borders = 5;
   options.notebook_data.pos = GTK_POS_TOP;
-  options.notebook_data.key = -1;
 
   /* Initialize notification data */
   options.notification_data.middle = TRUE;
   options.notification_data.hidden = FALSE;
   options.notification_data.menu = NULL;
+
+  /* Initialize paned data */
+  options.paned_data.orient = GTK_ORIENTATION_VERTICAL;
+  options.paned_data.splitter = -1;
 
   /* Initialize print data */
   options.print_data.type = YAD_PRINT_TEXT;
@@ -2014,7 +2074,10 @@ yad_options_init (void)
   options.text_data.back = NULL;
   options.text_data.wrap = FALSE;
   options.text_data.justify = GTK_JUSTIFY_LEFT;
+  options.text_data.margins = 0;
   options.text_data.tail = FALSE;
+  options.text_data.uri = FALSE;
+  options.text_data.uri_color = "blue";
 }
 
 GOptionContext *
@@ -2111,6 +2174,12 @@ yad_create_context (void)
   a_group = g_option_group_new ("notification", _("Notification icon options"),
                                 _("Show notification icon options"), NULL, NULL);
   g_option_group_add_entries (a_group, notification_options);
+  g_option_group_set_translation_domain (a_group, GETTEXT_PACKAGE);
+  g_option_context_add_group (tmp_ctx, a_group);
+
+  /* Adds paned option entries */
+  a_group = g_option_group_new ("paned", _("Paned dialog options"), _("Show paned dialog options"), NULL, NULL);
+  g_option_group_add_entries (a_group, paned_options);
   g_option_group_set_translation_domain (a_group, GETTEXT_PACKAGE);
   g_option_context_add_group (tmp_ctx, a_group);
 

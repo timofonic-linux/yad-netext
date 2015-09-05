@@ -126,12 +126,14 @@ ignore_close_cb (GtkWidget *w, gpointer data)
   g_signal_stop_emission_by_name (G_OBJECT (w), "close");
 }
 
+#ifdef HAVE_HTML
 static void
 html_response_cb (GtkDialog *dlg, gint id, gint *data)
 {
   *data = id;
   gtk_main_quit ();
 }
+#endif
 
 GtkWidget *
 create_dialog (void)
@@ -151,6 +153,15 @@ create_dialog (void)
   gtk_dialog_set_has_separator (GTK_DIALOG (dlg), options.data.dialog_sep);
 #endif
   gtk_widget_set_name (dlg, "yad-dialog-window");
+
+#ifndef  G_OS_WIN32
+  if (options.parent)
+    {
+      gdk_window_set_transient_for (gtk_widget_get_window (dlg),
+                                    gdk_x11_window_foreign_new_for_display (gdk_display_get_default (),
+                                                                            options.parent));
+    }
+#endif
 
   if (options.data.no_escape)
     g_signal_connect (G_OBJECT (dlg), "close", G_CALLBACK (ignore_close_cb) , NULL);
@@ -365,7 +376,10 @@ create_dialog (void)
       case YAD_MODE_NOTEBOOK:
         main_widget = notebook_create_widget (dlg);
         break;
-      case YAD_MODE_PROGRESS:
+    case YAD_MODE_PANED:
+        main_widget = paned_create_widget (dlg);
+        break;
+     case YAD_MODE_PROGRESS:
         main_widget = progress_create_widget (dlg);
         break;
       case YAD_MODE_SCALE:
@@ -625,6 +639,9 @@ print_result (void)
       case YAD_MODE_NOTEBOOK:
         notebook_print_result ();
         break;
+      case YAD_MODE_PANED:
+        paned_print_result ();
+        break;
       case YAD_MODE_SCALE:
         scale_print_result ();
         break;
@@ -765,6 +782,7 @@ main (gint argc, gchar ** argv)
         ret = yad_print_run ();
         break;
 
+#ifdef HAVE_HTML
       case YAD_MODE_HTML:
         /* Webkit doesn't handle focus for child dialogs when gtk_dialog_run() is used */
         /* FIXME: maybe this solution must be expanded to all dialogs */
@@ -775,6 +793,7 @@ main (gint argc, gchar ** argv)
 
         gtk_main ();
         break;
+#endif
 
       default:
         dialog = create_dialog ();
@@ -792,6 +811,8 @@ main (gint argc, gchar ** argv)
           }
         else if (options.mode == YAD_MODE_NOTEBOOK)
           notebook_swallow_childs ();
+        else if (options.mode == YAD_MODE_PANED)
+          paned_swallow_childs ();
 
         ret = gtk_dialog_run (GTK_DIALOG (dialog));
         if (options.data.always_print)
@@ -808,6 +829,8 @@ main (gint argc, gchar ** argv)
 #ifndef G_OS_WIN32
         if (options.mode == YAD_MODE_NOTEBOOK)
           notebook_close_childs ();
+        else if (options.mode == YAD_MODE_PANED)
+          paned_close_childs ();
         /* autokill option for progress dialog */
         if (!options.kill_parent)
           {
