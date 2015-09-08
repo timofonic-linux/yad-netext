@@ -1,3 +1,11 @@
+2015-09-08 04:57  v1c0nt
+
+	* src/option.c: fix parsing orientation
+
+2015-09-05 06:28  v1c0nt
+
+	* ChangeLog, NEWS: update NEWS
+
 2015-09-05 05:31  v1c0nt
 
 	* configure.ac, data/yad.1: update man page. bump version to
