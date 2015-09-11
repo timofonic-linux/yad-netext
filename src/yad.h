@@ -170,9 +170,6 @@ typedef struct {
   gchar *dialog_image;
   gboolean image_on_top;
   gchar *icon_theme;
-#if !GTK_CHECK_VERSION(3,0,0)
-  gboolean dialog_sep;
-#endif
   gchar *expander;
   gint borders;
   GSList *buttons;
@@ -203,7 +200,9 @@ typedef struct {
 
 typedef struct {
   gchar *init_color;
+  gboolean gtk_palette;
   gboolean use_palette;
+  gboolean expand_palette;
   gchar *palette;
   gboolean extra;
   gboolean alpha;
@@ -231,7 +230,9 @@ typedef struct {
   gboolean save;
   gboolean confirm_overwrite;
   gchar *confirm_text;
-  gchar **filter;
+  gchar **file_filt;
+  gchar **mime_filt;
+  gchar *image_filt;
 } YadFileData;
 
 typedef struct {
@@ -272,11 +273,14 @@ typedef struct {
   gboolean checkbox;
   gboolean radiobox;
   gboolean print_all;
+  gboolean rules_hint;
   gint print_column;
   gint hide_column;
   gint expand_column;
   gint search_column;
   gint tooltip_column;
+  gint sep_column;
+  gchar *sep_value;
   guint limit;
   PangoEllipsizeMode ellipsize;
   gchar *dclick_action;
@@ -363,6 +367,7 @@ typedef struct {
   gboolean listen;
   gboolean preview;
   gboolean quoted_output;
+  GList *filters;
   key_t key;
 } YadCommonData;
 
@@ -416,24 +421,19 @@ typedef struct {
   guint timeout;
   gchar *to_indicator;
   gboolean show_remain;
-  gboolean rules_hint;
   gboolean always_selected;
-#if !GTK_CHECK_VERSION(3,0,0)
-  gboolean dlg_sep;
-#endif
   gboolean combo_always_editable;
-  gboolean show_gtk_palette;
-  gboolean expand_palette;
   gboolean ignore_unknown;
   GtkIconTheme *icon_theme;
   GdkPixbuf *big_fallback_image;
   GdkPixbuf *small_fallback_image;
   gchar *term;
+  gchar *open_cmd;
+  gchar *date_format;
   guint max_tab;
 
   GtkPrintSettings *print_settings;
   GtkPageSetup *page_setup;
-
 } YadSettings;
 
 extern YadSettings settings;
@@ -500,6 +500,8 @@ void paned_close_childs (void);
 void read_settings (void);
 void write_settings (void);
 
+void update_preview (GtkFileChooser * chooser, GtkWidget *p);
+
 GdkPixbuf *get_pixbuf (gchar * name, YadIconSize size);
 
 gchar **split_arg (const gchar * str);
@@ -520,4 +522,5 @@ strip_new_line (gchar * str)
 }
 
 G_END_DECLS
+
 #endif /* _YAD_H_ */

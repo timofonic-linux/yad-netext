@@ -149,9 +149,6 @@ create_dialog (void)
   dlg = gtk_dialog_new ();
   gtk_window_set_type_hint (GTK_WINDOW (dlg), GDK_WINDOW_TYPE_HINT_NORMAL);
   gtk_window_set_title (GTK_WINDOW (dlg), options.data.dialog_title);
-#if !GTK_CHECK_VERSION(2,22,0)
-  gtk_dialog_set_has_separator (GTK_DIALOG (dlg), options.data.dialog_sep);
-#endif
   gtk_widget_set_name (dlg, "yad-dialog-window");
 
 #ifndef  G_OS_WIN32
@@ -678,6 +675,47 @@ main (gint argc, gchar ** argv)
   g_set_application_name ("YAD");
   yad_options_init ();
 
+  ctx = yad_create_context ();
+  /* parse YAD_OPTIONS */
+  if (g_getenv ("YAD_OPTIONS"))
+    {
+      gchar *cmd, **args = NULL;
+      gint cnt;
+      
+      cmd = g_strdup_printf ("yad %s", g_getenv ("YAD_OPTIONS"));
+      
+      if (g_shell_parse_argv (cmd, &cnt, &args, &err))
+        {
+          g_option_context_parse (ctx, &cnt, &args, &err);
+          if (err)
+            {
+              g_printerr (_("Unable to parse YAD_OPTIONS: %s\n"), err->message);
+              g_error_free (err);
+              err = NULL;          
+            }
+        }
+      else
+        {
+          g_printerr (_("Unable to parse YAD_OPTIONS: %s\n"), err->message);
+          g_error_free (err);
+          err = NULL;          
+        }
+        
+      g_free (cmd);
+    }
+  /* parse command line */
+  g_option_context_parse (ctx, &argc, &argv, &err);
+  if (err)
+    {
+      g_printerr (_("Unable to parse command line: %s\n"), err->message);
+      return -1;
+    }
+  yad_set_mode ();
+
+  /* parse custom gtkrc */
+  if (options.gtkrc_file)
+    gtk_rc_parse (options.gtkrc_file);
+
   /* set default icons and icon theme */
   if (options.data.icon_theme)
     {
@@ -692,19 +730,6 @@ main (gint argc, gchar ** argv)
   gtk_icon_size_lookup (GTK_ICON_SIZE_MENU, &w, &h);
   settings.small_fallback_image =
     gtk_icon_theme_load_icon (settings.icon_theme, "yad", MIN (w, h), GTK_ICON_LOOKUP_GENERIC_FALLBACK, NULL);
-
-  ctx = yad_create_context ();
-  g_option_context_parse (ctx, &argc, &argv, &err);
-  if (err)
-    {
-      g_printerr (_("Unable to parse command line: %s\n"), err->message);
-      return -1;
-    }
-  yad_set_mode ();
-
-  /* parse custom gtkrc */
-  if (options.gtkrc_file)
-    gtk_rc_parse (options.gtkrc_file);
 
   /* correct separators */
   str = g_strcompress (options.common_data.separator);

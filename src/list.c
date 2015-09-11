@@ -794,6 +794,14 @@ popup_menu_cb (GtkWidget * w, GdkEventButton * ev, gpointer data)
   return FALSE;
 }
 
+static gboolean
+row_sep_func (GtkTreeModel * m, GtkTreeIter * it, gpointer data)
+{
+  gchar *name;
+  gtk_tree_model_get (m, it, options.list_data.sep_column - 1, &name, -1);
+  return (strcmp (name, options.list_data.sep_value) == 0);
+}
+
 GtkWidget *
 list_create_widget (GtkWidget * dlg)
 {
@@ -820,7 +828,7 @@ list_create_widget (GtkWidget * dlg)
   list_view = gtk_tree_view_new_with_model (model);
   gtk_widget_set_name (list_view, "yad-list-widget");
   gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (list_view), !options.list_data.no_headers);
-  gtk_tree_view_set_rules_hint (GTK_TREE_VIEW (list_view), settings.rules_hint);
+  gtk_tree_view_set_rules_hint (GTK_TREE_VIEW (list_view), options.list_data.rules_hint);
   gtk_tree_view_set_reorderable (GTK_TREE_VIEW (list_view), options.common_data.editable);
   g_object_unref (model);
 
@@ -856,6 +864,10 @@ list_create_widget (GtkWidget * dlg)
       if (col->type == YAD_COLUMN_TEXT)
         gtk_tree_view_set_search_equal_func (GTK_TREE_VIEW (list_view), regex_search, NULL, NULL);
     }
+
+  /* add row separator function */
+  if (options.list_data.sep_column > 0)
+    gtk_tree_view_set_row_separator_func (GTK_TREE_VIEW (list_view), row_sep_func, NULL, NULL);
 
   return w;
 }

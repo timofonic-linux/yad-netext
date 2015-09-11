@@ -230,6 +230,9 @@ is a string with date details, which may include Pango markup.
 .B \-\-init\-color=\fICOLOR\fP
 Set initial color value.
 .TP
+.B \-\-gtk-palette
+Show system palette inside color dialog.
+.TP
 .B \-\-extra
 Show extra information about color in returned string.
 .TP
@@ -239,6 +242,9 @@ Add opacity to output color string.
 .B \-\-palette\fI[=FILENAME]\fP
 Show palette and set predefined colors from given filename.
 By default used \fI/etc/X11/rgb.txt\fP.
+.TP
+.B \-\-expand-palette
+Expander for list of user-defined colors will be initially opened.
 .TP
 .B \-\-mode=\fIMODE\fP
 Set output color mode. Possible values are \fIhex\fP or \fIrgb\fP. Default is \fIhex\fP. HEX mode looks like \fI#rrggbbaa\fP, RGB mode - \fIrgba(r, g, b, a)\fP.
@@ -343,16 +349,6 @@ Specify separator character when returning multiple filenames.
 .B \-\-confirm\-overwrite\fI[=TEXT]\fP
 Confirm file selection if filename already exists.
 Optional argument is a text for confirmation dialog.
-.TP
-.B \-\-file-filter=\fINAME | PATTERN1 PATTERN2 ...\fP
-Add a filename filter. \fINAME\fP is a displayed filter name, \fIPATTERN\fP
-is a shell-style filename pattern (for example *.txt). This option may be
-used multiply times.
-.TP
-.B \-\-add-preview
-Add preview widget to file dialog. Preview images loads from large or normal thumbnails according to XDG Thumbnails
-specification v0.8.0 (http://standards.freedesktop.org/thumbnail-spec/latest/) or creates by yad for image files and saves
-as large thumbnails.
 .TP
 .B \-\-quoted-output
 Output values will be shell-style quoted.
@@ -492,6 +488,9 @@ Do not show column headers.
 .B \-\-no-click
 Disable sorting of column content by clicking on its header.
 .TP
+.B \-\-no-rules-hint
+Don't draw even and odd rows by a different colors. This option depends on your current gtk theme and may not work.
+.TP
 .B \-\-print-all
 Print all data from the list.
 .TP
@@ -506,6 +505,15 @@ Set the column expandable by default. \fI0\fP sets all columns expandable.
 .TP
 .B \-\-search\-column=\fINUMBER\fP
 Set the quick search column. \fI0\fP mean to disable searching. By default search mades on first column.
+.TP
+.B \-\-tooltip\-column=\fINUMBER\fP
+Set the column with popup tooltips.
+.TP
+.B \-\-sep\-column=\fINUMBER\fP
+Set the row separator column. If the cell value from this column equal to specified row separator value such row will be draw as separator.
+.TP
+.B \-\-sep\-value=\fITEXT\fP
+Set the \fITEXT\fP as a row separator value.
 .TP
 .B \-\-limit=\fINUMBER\fP
 Set the number of rows in list dialog. Will be shown only the last \fINUMBER\fP rows. This option will take effect only when data reading from stdin.
@@ -728,6 +736,26 @@ Invert scale direction.
 .B \-\-mark=\fI[NAME]:VALUE\fP
 Add a mark to scale. May be used multiply times. \fINAME\fP is an optional arguments for set label to mark.
 
+.SS File filters options
+.TP
+.B \-\-file-filter=\fINAME | PATTERN1 PATTERN2 ...\fP
+Add a filename filter. \fINAME\fP is a displayed filter name, \fIPATTERN\fP
+is a shell-style filename pattern (for example *.txt). This option may be used multiply times.
+.TP
+.B \-\-mime-filter=\fINAME | MIME1 MIME2 ...\fP
+Add a mime-type filter. \fINAME\fP is a displayed filter name, \fIPATTERN\fP
+is a name of mime type (for example text/plain). This option may be used multiply times.
+.TP
+.B \-\-image-filter=\fI[NAME]\fP
+Add filter for images supported by gdk-pixbuf library. \fINAME\fP in as optional name for this filter.
+.TP
+.B \-\-add-preview
+Add preview widget. Preview images loads from large or normal thumbnails according to XDG Thumbnails
+specification v0.8.0 (http://standards.freedesktop.org/thumbnail-spec/latest/) or creates by yad for image files and saves
+as large thumbnails.
+
+This options applies to all of yad's file chooser dialogs.
+
 .SS Miscellaneous options
 .TP
 .B \-?, \-\-help
@@ -788,6 +816,10 @@ Separator character for menu items (e.g. `!') sets with \-\-item-separator argum
 Exit the program. Middle click on icon also send \fIquit\fP command.
 
 .SH ENVIRONMENT VARIABLES
+.TP
+.B YAD_OPTIONS
+This variable can holds some default options for yad. All options in this
+variable may be redefined from command line.
 .TP
 .B YAD_PID
 This variable sets to the value of current dialog's pid and accessible in all
@@ -872,7 +904,7 @@ yad-timeout-indicator@GtkProgreeBar@Timeout indicator
 .TP
 .B yad.conf
 YAD default settings. \fIyad.conf\fP placed in \fI$XDG_CONFIG_HOME\fP or \fI$HOME/.config\fP
-directory. This file contain comments on every settings and will be automatically
+directory. This file contain comments on every defaults and will be automatically
 recreated on yad'd start if it doesn't exists.
 
 .SH EXAMPLES

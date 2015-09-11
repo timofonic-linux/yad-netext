@@ -30,6 +30,7 @@ static gboolean add_tab (const gchar *, const gchar *, gpointer, GError **);
 static gboolean add_scale_mark (const gchar *, const gchar *, gpointer, GError **);
 static gboolean add_palette (const gchar *, const gchar *, gpointer, GError **);
 static gboolean add_confirm_overwrite (const gchar *, const gchar *, gpointer, GError **);
+static gboolean add_file_filter (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_color_mode (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_buttons_layout (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_align (const gchar *, const gchar *, gpointer, GError **);
@@ -178,14 +179,6 @@ static GOptionEntry general_options[] = {
    &options.data.no_escape,
    N_("Don't close dialog if Escape was pressed"),
    NULL},
-#if !GTK_CHECK_VERSION(2,22,0)
-  {"dialog-sep", 0,
-   0,
-   G_OPTION_ARG_NONE,
-   &options.data.dialog_sep,
-   N_("Add separator between dialog and buttons"),
-   NULL},
-#endif
   {"borders", 0,
    0,
    G_OPTION_ARG_INT,
@@ -359,12 +352,24 @@ static GOptionEntry color_options[] = {
    &options.color_data.init_color,
    N_("Set initial color value"),
    N_("COLOR")},
+  {"gtk-palette", 0,
+   0,
+   G_OPTION_ARG_NONE,
+   &options.color_data.gtk_palette,
+   N_("Show system palette in color dialog"),
+   NULL},
   {"palette", 0,
    G_OPTION_FLAG_OPTIONAL_ARG,
    G_OPTION_ARG_CALLBACK,
    add_palette,
    N_("Set path to palette file. Default - " RGB_FILE),
    N_("FILENAME")},
+  {"expand-palette", 0,
+   0,
+   G_OPTION_ARG_NONE,
+   &options.color_data.expand_palette,
+   N_("Expand user palette"),
+   NULL},
   {"mode", 0,
    0,
    G_OPTION_ARG_CALLBACK,
@@ -527,18 +532,6 @@ static GOptionEntry file_options[] = {
    add_confirm_overwrite,
    N_("Confirm file selection if filename already exists"),
    N_("[TEXT]")},
-  {"file-filter", 0,
-   0,
-   G_OPTION_ARG_STRING_ARRAY,
-   &options.file_data.filter,
-   N_("Sets a filename filter"),
-   N_("NAME | PATTERN1 PATTERN2 ...")},
-  {"add-preview", 0,
-   0,
-   G_OPTION_ARG_NONE,
-   &options.common_data.preview,
-   N_("Enable preview"),
-   NULL},
   {"quoted-output", 0,
    G_OPTION_FLAG_NOALIAS,
    G_OPTION_ARG_NONE,
@@ -755,12 +748,6 @@ static GOptionEntry list_options[] = {
    &list_mode,
    N_("Display list dialog"),
    NULL},
-  {"no-headers", 0,
-   0,
-   G_OPTION_ARG_NONE,
-   &options.list_data.no_headers,
-   N_("Don't show column headers"),
-   NULL},
   {"column", 0,
    0,
    G_OPTION_ARG_CALLBACK,
@@ -779,11 +766,23 @@ static GOptionEntry list_options[] = {
    &options.list_data.radiobox,
    N_("Use radioboxes for first column"),
    NULL},
+  {"no-headers", 0,
+   0,
+   G_OPTION_ARG_NONE,
+   &options.list_data.no_headers,
+   N_("Don't show column headers"),
+   NULL},
   {"no-click", 0,
    G_OPTION_FLAG_REVERSE,
    G_OPTION_ARG_NONE,
    &options.list_data.clickable,
    N_("Disable clickable column headers"),
+   NULL},
+  {"no-rules-hint", 0,
+   G_OPTION_FLAG_REVERSE,
+   G_OPTION_ARG_NONE,
+   &options.list_data.rules_hint,
+   N_("Disable rules hints"),
    NULL},
   {"separator",
    0,
@@ -846,6 +845,18 @@ static GOptionEntry list_options[] = {
    &options.list_data.tooltip_column,
    N_("Set the tooltip column"),
    N_("NUMBER")},
+  {"sep-column", 0,
+   0,
+   G_OPTION_ARG_INT,
+   &options.list_data.sep_column,
+   N_("Set the row separator column"),
+   N_("NUMBER")},
+  {"sep-value", 0,
+   0,
+   G_OPTION_ARG_STRING,
+   &options.list_data.sep_value,
+   N_("Set the row separator value"),
+   N_("TEXT")},
   {"limit", 0,
    0,
    G_OPTION_ARG_INT,
@@ -1062,7 +1073,7 @@ static GOptionEntry print_options[] = {
    N_("Add headers to page"),
    NULL},
   {"add-preview", 0,
-   0,
+   G_OPTION_FLAG_NOALIAS,
    G_OPTION_ARG_NONE,
    &options.common_data.preview,
    N_("Enable preview in print dialog"),
@@ -1297,6 +1308,34 @@ static GOptionEntry text_options[] = {
    G_OPTION_ARG_NONE,
    &options.common_data.listen,
    N_("Listen for data on stdin in addition to file"),
+   NULL},
+  {NULL}
+};
+
+static GOptionEntry filter_options[] = {
+  {"file-filter", 0,
+   0,
+   G_OPTION_ARG_CALLBACK,
+   add_file_filter,
+   N_("Sets a filename filter"),
+   N_("NAME | PATTERN1 PATTERN2 ...")},
+  {"mime-filter", 0,
+   0,
+   G_OPTION_ARG_CALLBACK,
+   add_file_filter,
+   N_("Sets a mime-type filter"),
+   N_("NAME | MIME1 MIME2 ...")},
+  {"image-filter", 0,
+   G_OPTION_FLAG_OPTIONAL_ARG,
+   G_OPTION_ARG_CALLBACK,
+   add_file_filter,
+   N_("Add filter for images"),
+   N_("NAME")},
+  {"add-preview", 0,
+   G_OPTION_FLAG_NOALIAS,
+   G_OPTION_ARG_NONE,
+   &options.common_data.preview,
+   N_("Enable preview"),
    NULL},
   {NULL}
 };
@@ -1555,6 +1594,71 @@ add_confirm_overwrite (const gchar * option_name, const gchar * value, gpointer 
   options.file_data.confirm_overwrite = TRUE;
   if (value)
     options.file_data.confirm_text = g_strdup (value);
+
+  return TRUE;
+}
+
+static gboolean
+add_file_filter (const gchar * option_name, const gchar * value, gpointer data, GError ** err)
+{
+  GtkFileFilter *filter = gtk_file_filter_new ();
+
+  /* add image filter */
+  if (strcmp (option_name, "--image-filter") == 0)
+    {
+      gtk_file_filter_set_name (filter, value ? value : _("Images"));
+      gtk_file_filter_add_pixbuf_formats (filter);
+      options.common_data.filters = g_list_append (options.common_data.filters, filter);
+    }
+  else
+    {
+      gint i;
+      gchar **pattern, **patterns;
+      gchar *name = NULL;
+      gboolean is_mime = (strcmp (option_name, "--mime-filter") == 0);
+
+      /* Set name */
+      for (i = 0; value[i] != '\0'; i++)
+        {
+          if (value[i] == '|')
+            break;
+        }
+
+      if (value[i] == '|')
+        name = g_strstrip (g_strndup (value, i));
+
+      if (name)
+        {
+          gtk_file_filter_set_name (filter, name);
+
+          /* Point i to the right position for split */
+          for (++i; value[i] == ' '; i++);
+        }
+      else
+        {
+          gtk_file_filter_set_name (filter, value);
+          i = 0;
+        }
+
+      /* Get patterns */
+      patterns = g_strsplit_set (value + i, " ", -1);
+
+      if (is_mime)
+        {
+          for (pattern = patterns; *pattern; pattern++)
+            gtk_file_filter_add_mime_type (filter, *pattern);
+        }
+      else
+        {
+          for (pattern = patterns; *pattern; pattern++)
+            gtk_file_filter_add_pattern (filter, *pattern);
+        }
+
+      g_free (name);
+      g_strfreev (patterns);
+
+      options.common_data.filters = g_list_append (options.common_data.filters, filter);
+    }
 
   return TRUE;
 }
@@ -1906,9 +2010,6 @@ yad_options_init (void)
   options.data.buttons = NULL;
   options.data.no_buttons = FALSE;
   options.data.buttons_layout = GTK_BUTTONBOX_END;
-#if !GTK_CHECK_VERSION(2,22,0)
-  options.data.dialog_sep = settings.dlg_sep;
-#endif
   options.data.borders = -1;
   options.data.no_markup = FALSE;
   options.data.no_escape = FALSE;
@@ -1934,12 +2035,13 @@ yad_options_init (void)
   options.common_data.multi = FALSE;
   options.common_data.editable = FALSE;
   options.common_data.command = NULL;
-  options.common_data.date_format = "%x";
+  options.common_data.date_format = settings.date_format;
   options.common_data.vertical = FALSE;
   options.common_data.align = 0.0;
   options.common_data.listen = FALSE;
   options.common_data.preview = FALSE;
   options.common_data.quoted_output = FALSE;
+  options.common_data.filters = NULL;
   options.common_data.key = -1;
 
   /* Initialize calendar data */
@@ -1950,7 +2052,9 @@ yad_options_init (void)
 
   /* Initialize color data */
   options.color_data.init_color = NULL;
+  options.color_data.gtk_palette = FALSE;
   options.color_data.use_palette = FALSE;
+  options.color_data.expand_palette = FALSE;
   options.color_data.palette = NULL;
   options.color_data.extra = FALSE;
   options.color_data.alpha = FALSE;
@@ -1975,7 +2079,9 @@ yad_options_init (void)
   options.file_data.save = FALSE;
   options.file_data.confirm_overwrite = FALSE;
   options.file_data.confirm_text = N_("File exist. Overwrite?");
-  options.file_data.filter = NULL;
+  options.file_data.file_filt = NULL;
+  options.file_data.mime_filt = NULL;
+  options.file_data.image_filt = NULL;
 
   /* Initialize font data */
   options.font_data.preview = NULL;
@@ -2011,11 +2117,14 @@ yad_options_init (void)
   options.list_data.checkbox = FALSE;
   options.list_data.radiobox = FALSE;
   options.list_data.print_all = FALSE;
+  options.list_data.rules_hint = TRUE;
   options.list_data.print_column = 0;
   options.list_data.hide_column = 0;
   options.list_data.expand_column = -1; // must be -1 for disable expand by default (keep the original behavior)
   options.list_data.search_column = 0;
   options.list_data.tooltip_column = 0;
+  options.list_data.sep_column = 0;
+  options.list_data.sep_value = NULL;
   options.list_data.limit = 0;
   options.list_data.ellipsize = PANGO_ELLIPSIZE_NONE;
   options.list_data.dclick_action = NULL;
@@ -2204,6 +2313,12 @@ yad_create_context (void)
   /* Adds text option entries */
   a_group = g_option_group_new ("text", _("Text information options"), _("Show text information options"), NULL, NULL);
   g_option_group_add_entries (a_group, text_options);
+  g_option_group_set_translation_domain (a_group, GETTEXT_PACKAGE);
+  g_option_context_add_group (tmp_ctx, a_group);
+
+  /* Adds file filters option entries */
+  a_group = g_option_group_new ("filter", _("File filter options"), _("Show file filter options"), NULL, NULL);
+  g_option_group_add_entries (a_group, filter_options);
   g_option_group_set_translation_domain (a_group, GETTEXT_PACKAGE);
   g_option_context_add_group (tmp_ctx, a_group);
 
