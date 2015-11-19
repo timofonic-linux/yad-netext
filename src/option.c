@@ -252,6 +252,18 @@ static GOptionEntry general_options[] = {
    &options.data.fullscreen,
    N_("Set window fulscreen"),
    NULL},
+  {"no-focus", 0,
+   G_OPTION_FLAG_REVERSE,
+   G_OPTION_ARG_NONE,
+   &options.data.focus,
+   N_("Don't focus dialog window"),
+   NULL},
+  {"splash", 0,
+   0,
+   G_OPTION_ARG_NONE,
+   &options.data.splash,
+   N_("Open window as a splashscreen"),
+   NULL},
   {"plug", 0,
    0,
    G_OPTION_ARG_INT,
@@ -480,6 +492,12 @@ static GOptionEntry entry_options[] = {
    &options.entry_data.ricon_action,
    N_("Set the right entry icon action"),
    N_("CMD")},
+  {"num-output", 0,
+   G_OPTION_FLAG_NOALIAS,
+   G_OPTION_ARG_NONE,
+   &options.common_data.num_output,
+   N_("Output number instead of text for combo-box"),
+   NULL},
   {NULL}
 };
 
@@ -630,6 +648,12 @@ static GOptionEntry form_options[] = {
    G_OPTION_ARG_NONE,
    &options.form_data.output_by_row,
    N_("Order output fields by rows"),
+   NULL},
+  {"num-output", 0,
+   G_OPTION_FLAG_NOALIAS,
+   G_OPTION_ARG_NONE,
+   &options.common_data.num_output,
+   N_("Output number instead of text for combo-boxes"),
    NULL},
   {NULL}
 };
@@ -2026,6 +2050,8 @@ yad_options_init (void)
   options.data.skip_taskbar = FALSE;
   options.data.maximized = FALSE;
   options.data.fullscreen = FALSE;
+  options.data.splash = FALSE;
+  options.data.focus = TRUE;
 
   /* Initialize common data */
   options.common_data.uri = NULL;
@@ -2041,6 +2067,7 @@ yad_options_init (void)
   options.common_data.listen = FALSE;
   options.common_data.preview = FALSE;
   options.common_data.quoted_output = FALSE;
+  options.common_data.num_output = FALSE;
   options.common_data.filters = NULL;
   options.common_data.key = -1;
 

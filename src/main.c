@@ -147,7 +147,10 @@ create_dialog (void)
 
   /* create dialog window */
   dlg = gtk_dialog_new ();
-  gtk_window_set_type_hint (GTK_WINDOW (dlg), GDK_WINDOW_TYPE_HINT_NORMAL);
+  if (options.data.splash)
+    gtk_window_set_type_hint (GTK_WINDOW (dlg), GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
+  else
+    gtk_window_set_type_hint (GTK_WINDOW (dlg), GDK_WINDOW_TYPE_HINT_NORMAL);
   gtk_window_set_title (GTK_WINDOW (dlg), options.data.dialog_title);
   gtk_widget_set_name (dlg, "yad-dialog-window");
 
@@ -197,6 +200,7 @@ create_dialog (void)
   gtk_window_set_decorated (GTK_WINDOW (dlg), !options.data.undecorated);
   gtk_window_set_skip_taskbar_hint (GTK_WINDOW (dlg), options.data.skip_taskbar);
   gtk_window_set_skip_pager_hint (GTK_WINDOW (dlg), options.data.skip_taskbar);
+  gtk_window_set_accept_focus (GTK_WINDOW (dlg), options.data.focus);
 
   /* create timeout indicator widget */
   if (options.data.timeout)
@@ -229,6 +233,8 @@ create_dialog (void)
         {
 #if !GTK_CHECK_VERSION(3,0,0)
           gtk_progress_bar_set_orientation (GTK_PROGRESS_BAR (topb), GTK_PROGRESS_LEFT_TO_RIGHT);
+#else
+          gtk_orientable_set_orientation (GTK_ORIENTABLE (topb), GTK_ORIENTATION_HORIZONTAL);
 #endif
           gtk_box_pack_start (GTK_BOX (vbox), topb, FALSE, FALSE, 2);
         }
@@ -236,6 +242,8 @@ create_dialog (void)
         {
 #if !GTK_CHECK_VERSION(3,0,0)
           gtk_progress_bar_set_orientation (GTK_PROGRESS_BAR (topb), GTK_PROGRESS_LEFT_TO_RIGHT);
+#else
+          gtk_orientable_set_orientation (GTK_ORIENTABLE (topb), GTK_ORIENTATION_HORIZONTAL);
 #endif
           gtk_box_pack_end (GTK_BOX (vbox), topb, FALSE, FALSE, 2);
         }
@@ -243,6 +251,9 @@ create_dialog (void)
         {
 #if !GTK_CHECK_VERSION(3,0,0)
           gtk_progress_bar_set_orientation (GTK_PROGRESS_BAR (topb), GTK_PROGRESS_BOTTOM_TO_TOP);
+#else
+          gtk_orientable_set_orientation (GTK_ORIENTABLE (topb), GTK_ORIENTATION_VERTICAL);
+          gtk_progress_bar_set_inverted (GTK_PROGRESS_BAR (topb), TRUE);
 #endif
           gtk_box_pack_start (GTK_BOX (hbox), topb, FALSE, FALSE, 2);
         }
@@ -250,6 +261,9 @@ create_dialog (void)
         {
 #if !GTK_CHECK_VERSION(3,0,0)
           gtk_progress_bar_set_orientation (GTK_PROGRESS_BAR (topb), GTK_PROGRESS_BOTTOM_TO_TOP);
+#else
+          gtk_orientable_set_orientation (GTK_ORIENTABLE (topb), GTK_ORIENTATION_VERTICAL);
+          gtk_progress_bar_set_inverted (GTK_PROGRESS_BAR (topb), TRUE);
 #endif
           gtk_box_pack_end (GTK_BOX (hbox), topb, FALSE, FALSE, 2);
         }
@@ -427,7 +441,9 @@ create_dialog (void)
         }
       else
         {
-          if (options.mode == YAD_MODE_PROGRESS || options.mode == YAD_MODE_MULTI_PROGRESS)
+          if (options.mode == YAD_MODE_PROGRESS || 
+              options.mode == YAD_MODE_MULTI_PROGRESS ||
+              options.mode == YAD_MODE_DND)
             gtk_dialog_add_buttons (GTK_DIALOG (dlg), GTK_STOCK_CLOSE, YAD_RESPONSE_OK, NULL);
           else
             {

@@ -183,6 +183,13 @@ Run dialog window maximized.
 .B \-\-fullscreen
 Run dialog in fullscreen mode. This option may not work on all window managers.
 .TP
+.B \-\-splash
+Open window with "splashscreen" window hints. For details see description of \fI_NET_WM_WINDOW_TYPE_SPLASH\fP
+in EWMH specification. The behavior of dialog with this option is HIGHLY DEPENDS on settings of window manager you use.
+.TP
+.B \-\-no-focus
+Dialog window never take focus.
+.TP
 .B \-\-geometry=\fIWIDTHxHEIGHT+X+Y\fP
 Use standard X Window geometry notation for placing dialog.
 When this option is used, \fIwidth\fP, \fIheight\fP, \fImouse\fP and \fIcenter\fP options are
@@ -291,6 +298,9 @@ Set an icon on a right side of entry.
 .TP
 .B \-\-ricon-action=\fICMD\fP
 Specify a command which will be run when the right icon clicked. Output of command will be set as entry text.
+.TP
+.B \-\-num-output
+Output index of active element instead of text for combo-box entry.
 .PP
 Any extra data specified in command line adds as an items of combo-box entry, except of numeric mode.
 
@@ -434,6 +444,9 @@ Output values will be in shell-style quotes.
 .TP
 .B \-\-output-by-row
 Output field values row by row if several columns is specified.
+.TP
+.B \-\-num-output
+Output index of active element instead of text for combo-box fields.
 .PP
 Additional data in command line interprets as a default values for form fields. A special value \fI@disabled\fP makes  corresponding field inactive.
 
