@@ -20,6 +20,7 @@ yad_SOURCES = 			\
 	notification.c		\
 	option.c		\
 	paned.c			\
+	picture.c       \
 	print.c			\
 	progress.c		\
 	scale.c			\

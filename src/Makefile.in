@@ -105,8 +105,8 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__yad_SOURCES_DIST = about.c calendar.c color.c dnd.c entry.c file.c \
 	font.c form.c icons.c list.c multi-progress.c notebook.c \
-	notification.c option.c paned.c print.c progress.c scale.c \
-	text.c util.c main.c yad.h calendar.xpm html.c
+	notification.c option.c paned.c picture.c print.c progress.c \
+	scale.c text.c util.c main.c yad.h calendar.xpm html.c
 @HTML_TRUE@am__objects_1 = yad-html.$(OBJEXT)
 am_yad_OBJECTS = yad-about.$(OBJEXT) yad-calendar.$(OBJEXT) \
 	yad-color.$(OBJEXT) yad-dnd.$(OBJEXT) yad-entry.$(OBJEXT) \
@@ -114,9 +114,9 @@ am_yad_OBJECTS = yad-about.$(OBJEXT) yad-calendar.$(OBJEXT) \
 	yad-icons.$(OBJEXT) yad-list.$(OBJEXT) \
 	yad-multi-progress.$(OBJEXT) yad-notebook.$(OBJEXT) \
 	yad-notification.$(OBJEXT) yad-option.$(OBJEXT) \
-	yad-paned.$(OBJEXT) yad-print.$(OBJEXT) yad-progress.$(OBJEXT) \
-	yad-scale.$(OBJEXT) yad-text.$(OBJEXT) yad-util.$(OBJEXT) \
-	yad-main.$(OBJEXT) $(am__objects_1)
+	yad-paned.$(OBJEXT) yad-picture.$(OBJEXT) yad-print.$(OBJEXT) \
+	yad-progress.$(OBJEXT) yad-scale.$(OBJEXT) yad-text.$(OBJEXT) \
+	yad-util.$(OBJEXT) yad-main.$(OBJEXT) $(am__objects_1)
 yad_OBJECTS = $(am_yad_OBJECTS)
 am__DEPENDENCIES_1 =
 yad_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
@@ -323,8 +323,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 yad_SOURCES = about.c calendar.c color.c dnd.c entry.c file.c font.c \
 	form.c icons.c list.c multi-progress.c notebook.c \
-	notification.c option.c paned.c print.c progress.c scale.c \
-	text.c util.c main.c yad.h calendar.xpm $(am__append_1)
+	notification.c option.c paned.c picture.c print.c progress.c \
+	scale.c text.c util.c main.c yad.h calendar.xpm \
+	$(am__append_1)
 yad_CFLAGS = $(GTK_CFLAGS) $(HTML_CFLAGS)
 yad_LDADD = $(GTK_LIBS) $(HTML_LIBS)
 @BUILD_IB_TRUE@yad_icon_browser_SOURCES = browser.c
@@ -437,6 +438,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yad-notification.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yad-option.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yad-paned.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yad-picture.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yad-print.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yad-progress.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yad-scale.Po@am__quote@
@@ -667,6 +669,20 @@ yad-paned.obj: paned.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='paned.c' object='yad-paned.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yad_CFLAGS) $(CFLAGS) -c -o yad-paned.obj `if test -f 'paned.c'; then $(CYGPATH_W) 'paned.c'; else $(CYGPATH_W) '$(srcdir)/paned.c'; fi`
+
+yad-picture.o: picture.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yad_CFLAGS) $(CFLAGS) -MT yad-picture.o -MD -MP -MF $(DEPDIR)/yad-picture.Tpo -c -o yad-picture.o `test -f 'picture.c' || echo '$(srcdir)/'`picture.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yad-picture.Tpo $(DEPDIR)/yad-picture.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='picture.c' object='yad-picture.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yad_CFLAGS) $(CFLAGS) -c -o yad-picture.o `test -f 'picture.c' || echo '$(srcdir)/'`picture.c
+
+yad-picture.obj: picture.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yad_CFLAGS) $(CFLAGS) -MT yad-picture.obj -MD -MP -MF $(DEPDIR)/yad-picture.Tpo -c -o yad-picture.obj `if test -f 'picture.c'; then $(CYGPATH_W) 'picture.c'; else $(CYGPATH_W) '$(srcdir)/picture.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yad-picture.Tpo $(DEPDIR)/yad-picture.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='picture.c' object='yad-picture.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yad_CFLAGS) $(CFLAGS) -c -o yad-picture.obj `if test -f 'picture.c'; then $(CYGPATH_W) 'picture.c'; else $(CYGPATH_W) '$(srcdir)/picture.c'; fi`
 
 yad-print.o: print.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yad_CFLAGS) $(CFLAGS) -MT yad-print.o -MD -MP -MF $(DEPDIR)/yad-print.Tpo -c -o yad-print.o `test -f 'print.c' || echo '$(srcdir)/'`print.c

@@ -17,6 +17,10 @@
  * Copyright (C) 2008-2015, Victor Ananjevsky <ananasik@gmail.com>
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -125,7 +129,7 @@ write_settings (void)
   g_key_file_set_string (kf, "General", "date_format", settings.date_format);
   g_key_file_set_comment (kf, "General", "date_format", " Default date format (sett msgfmt(3) for details)", NULL);
   g_key_file_set_boolean (kf, "General", "ignore_unknown_options", settings.ignore_unknown);
-  g_key_file_set_comment (kf, "General", "ignore_unknown_options", " Ingnore unknown command-line options", NULL);
+  g_key_file_set_comment (kf, "General", "ignore_unknown_options", " Ignore unknown command-line options", NULL);
   g_key_file_set_integer (kf, "General", "max_tab", settings.max_tab);
   g_key_file_set_comment (kf, "General", "max_tab", " Maximum number of tabs in notebook", NULL);
 
@@ -209,7 +213,7 @@ update_preview (GtkFileChooser * chooser, GtkWidget *p)
       GdkPixbuf *pb;
 
       chs = g_checksum_new (G_CHECKSUM_MD5);
-      g_checksum_update (chs, uri, -1);
+      g_checksum_update (chs, (const guchar *) uri, -1);
       /* first try to get preview from large thumbnail */
       file = g_strdup_printf ("%s/%s.png", large_path, g_checksum_get_string (chs));
       if (g_file_test (file, G_FILE_TEST_EXISTS))
@@ -285,7 +289,7 @@ get_tabs (key_t key, gboolean create)
     {
       if ((shmid = shmget (key, (settings.max_tab + 1) * sizeof (YadNTabs), IPC_CREAT | IPC_EXCL | 0644)) == -1)
         {
-          g_printerr ("yad: cannot create shared memory for key %ld: %s\n", key, strerror (errno));
+          g_printerr ("yad: cannot create shared memory for key %d: %s\n", key, strerror (errno));
           return NULL;
         }
     }
@@ -294,7 +298,7 @@ get_tabs (key_t key, gboolean create)
       if ((shmid = shmget (key, (settings.max_tab + 1) * sizeof (YadNTabs), 0)) == -1)
         {
           if (errno != ENOENT)
-            g_printerr ("yad: cannot get shared memory for key %ld: %s\n", key, strerror (errno));
+            g_printerr ("yad: cannot get shared memory for key %d: %s\n", key, strerror (errno));
           return NULL;
         }
     }
@@ -302,7 +306,7 @@ get_tabs (key_t key, gboolean create)
   /* attach shared memory */
   if ((t = shmat (shmid, NULL, 0)) == (YadNTabs *) - 1)
     {
-      g_printerr ("yad: cannot attach shared memory for key %ld: %s\n", key, strerror (errno));
+      g_printerr ("yad: cannot attach shared memory for key %d: %s\n", key, strerror (errno));
       return NULL;
     }
 
@@ -327,7 +331,7 @@ get_label (gchar * str, guint border)
   GtkStockItem it;
   gchar **vals;
 
-  if (!str)
+  if (!str || !*str)
     return gtk_label_new (NULL);
 
   l = i = NULL;
@@ -425,4 +429,63 @@ escape_str (gchar *str)
   res[i] = '\0';
 
   return res;
+}
+
+gboolean
+check_complete (GtkEntryCompletion *c, const gchar *key, GtkTreeIter *iter, gpointer data)
+{
+  gchar *value = NULL;
+  GtkTreeModel *model = gtk_entry_completion_get_model (c);
+  gboolean found = FALSE;
+
+  if (!model || !key || !key[0])
+    return FALSE;
+
+  gtk_tree_model_get (model, iter, 0, &value, -1);
+
+  if (value)
+    {
+      gchar **words = NULL;
+      guint i = 0;
+
+      switch (options.common_data.complete)
+        {
+        case YAD_COMPLETE_ANY:
+          words = g_strsplit_set (key, " \t", -1);
+          while (words[i])
+            {
+              if (strcasestr (value, words[i]) != NULL)
+                {
+                  /* found one of the words */
+                  found = TRUE;
+                  break;
+                }
+              i++;
+            }
+          break;
+        case YAD_COMPLETE_ALL:
+          words = g_strsplit_set (key, " \t", -1);
+          found = TRUE;
+          while (words[i])
+            {
+              if (strcasestr (value, words[i]) == NULL)
+                {
+                  /* not found one of the words */
+                  found = FALSE;
+                  break;
+                }
+              i++;
+            }
+          break;
+        case YAD_COMPLETE_REGEX:
+          found = g_regex_match_simple (key, value, G_REGEX_CASELESS | G_REGEX_OPTIMIZE, G_REGEX_MATCH_NOTEMPTY);
+          break;
+        default: ;
+        }
+        
+      if (words)
+        g_strfreev (words);
+    }
+
+  return found;
 }

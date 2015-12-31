@@ -74,8 +74,8 @@ expand_action (gchar * cmd)
                   g_string_append (xcmd, gtk_entry_get_text (GTK_ENTRY (g_slist_nth_data (fields, num))));
                   break;
                 case YAD_FIELD_NUM:
-                  g_string_append_printf (xcmd, "%f", gtk_spin_button_get_value
-                                          (GTK_SPIN_BUTTON (g_slist_nth_data (fields, num))));
+                  g_string_append_printf (xcmd, "%.*g", options.common_data.float_precision,
+                                          gtk_spin_button_get_value (GTK_SPIN_BUTTON (g_slist_nth_data (fields, num))));
                   break;
                 case YAD_FIELD_CHECK:
                   g_string_append (xcmd, gtk_toggle_button_get_active
@@ -83,14 +83,13 @@ expand_action (gchar * cmd)
                   break;
                 case YAD_FIELD_COMBO:
                 case YAD_FIELD_COMBO_ENTRY:
-                  g_string_append (xcmd,
 #if GTK_CHECK_VERSION(2,24,0)
-                                   gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT
-                                                                       (g_slist_nth_data (fields, num)))
+                  buf = gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT (g_slist_nth_data (fields, num)));
 #else
-                                   gtk_combo_box_get_active_text (GTK_COMBO_BOX (g_slist_nth_data (fields, num)))
+                  buf = gtk_combo_box_get_active_text (GTK_COMBO_BOX (g_slist_nth_data (fields, num)));
 #endif
-                    );
+                  g_string_append (xcmd, buf ? buf : "");
+                  g_free (buf);
                   break;
                 case YAD_FIELD_SCALE:
                   g_string_append_printf (xcmd, "%d", (gint) gtk_range_get_value
@@ -246,6 +245,8 @@ set_field_value (guint num, gchar * value)
           }
         if (def >= 0)
           gtk_entry_set_text (GTK_ENTRY (w), s[def] + 1);
+        else
+          gtk_entry_set_text (GTK_ENTRY (w), "");
         g_strfreev (s);
         break;
       }
@@ -372,6 +373,10 @@ button_clicked_cb (GtkButton * b, gchar * action)
           g_string_free (cmd, TRUE);
         }
     }
+
+  /* set focus to specified field */
+  if (options.form_data.focus_field > 0 && options.form_data.focus_field <= n_fields)
+    gtk_widget_grab_focus (GTK_WIDGET (g_slist_nth_data (fields, options.form_data.focus_field - 1)));
 }
 
 static void
@@ -579,13 +584,92 @@ select_date_cb (GtkEntry * entry, GtkEntryIconPosition pos, GdkEventButton * eve
         }
       gtk_widget_destroy (dlg);
     }
+
+  gtk_widget_grab_focus (GTK_WIDGET (entry));
+}
+
+static gboolean
+handle_stdin (GIOChannel * ch, GIOCondition cond, gpointer data)
+{
+  static guint cnt = 0;
+
+  if ((cond == G_IO_IN) || (cond == G_IO_IN + G_IO_HUP))
+    {
+      GError *err = NULL;
+      GString *string = g_string_new (NULL);
+
+      while (ch->is_readable != TRUE);
+
+      do
+        {
+          gint status;
+
+          if (cnt == n_fields)
+            {
+              if (options.form_data.cycle_read)
+                cnt = 0;
+              else
+                {
+                  g_io_channel_shutdown (ch, TRUE, NULL);
+                  return FALSE;
+                }
+            }
+
+          do
+            {
+              status = g_io_channel_read_line_string (ch, string, NULL, &err);
+
+              while (gtk_events_pending ())
+                gtk_main_iteration ();
+            }
+          while (status == G_IO_STATUS_AGAIN);
+
+          if (status != G_IO_STATUS_NORMAL)
+            {
+              if (err)
+                {
+                  g_printerr ("yad_form_handle_stdin(): %s\n", err->message);
+                  g_error_free (err);
+                  err = NULL;
+                }
+              /* stop handling */
+              g_io_channel_shutdown (ch, TRUE, NULL);
+              return FALSE;
+            }
+
+          strip_new_line (string->str);
+          if (string->str[0])
+            {
+              if (string->str[0] == '\014')
+                {
+                  gint i;
+                  /* clear the form and reset fields counter */
+                  for (i = 0; i < n_fields; i++)
+                    set_field_value (i, "");
+                  cnt = 0;
+                }
+              else
+                set_field_value (cnt, string->str);
+            }
+          cnt++;
+        }
+      while (g_io_channel_get_buffer_condition (ch) == G_IO_IN);
+      g_string_free (string, TRUE);
+    }
+
+  if ((cond != G_IO_IN) && (cond != G_IO_IN + G_IO_HUP))
+    {
+      g_io_channel_shutdown (ch, TRUE, NULL);
+      return FALSE;
+    }
+
+  return TRUE;
 }
 
 GtkWidget *
 form_create_widget (GtkWidget * dlg)
 {
-  GtkWidget *sw, *vp, *tbl;
-  GtkWidget *w = NULL;
+  GtkWidget *tbl, *w = NULL;
   GList *filt;
 
   if (options.form_data.fields)
@@ -611,21 +695,11 @@ form_create_widget (GtkWidget * dlg)
 
       if (options.form_data.scroll)
         {
-          /* create scrolled container */
-          GtkAdjustment *hadj, *vadj;
-
-          sw = gtk_scrolled_window_new (NULL, NULL);
+          GtkWidget *sw = gtk_scrolled_window_new (NULL, NULL);
           gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (sw), GTK_SHADOW_NONE);
           gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
-          hadj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW (sw));
-          vadj = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (sw));
-
-          vp = gtk_viewport_new (hadj, vadj);
-          gtk_viewport_set_shadow_type (GTK_VIEWPORT (vp), GTK_SHADOW_NONE);
-          gtk_container_add (GTK_CONTAINER (sw), vp);
-
-          gtk_container_add (GTK_CONTAINER (vp), tbl);
+          gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (sw), tbl);
           w = sw;
         }
       else
@@ -686,6 +760,9 @@ form_create_widget (GtkWidget * dlg)
                   gtk_entry_set_completion (GTK_ENTRY (e), c);
                   gtk_entry_completion_set_model (c, GTK_TREE_MODEL (m));
                   gtk_entry_completion_set_text_column (c, 0);
+
+                  if (options.common_data.complete != YAD_COMPLETE_SIMPLE)
+                    gtk_entry_completion_set_match_func (c, check_complete, NULL, NULL);
 
                   g_object_unref (m);
                   g_object_unref (c);
@@ -1023,7 +1100,17 @@ form_create_widget (GtkWidget * dlg)
               i++;
             }
         }
+      else
+        {
+          GIOChannel *channel = g_io_channel_unix_new (0);
+          g_io_channel_set_encoding (channel, NULL, NULL);
+          g_io_channel_set_flags (channel, G_IO_FLAG_NONBLOCK, NULL);
+          g_io_add_watch (channel, G_IO_IN | G_IO_HUP, handle_stdin, NULL);
+        }
     }
+
+  if (options.form_data.focus_field > 0 && options.form_data.focus_field <= n_fields)
+    gtk_widget_grab_focus (GTK_WIDGET (g_slist_nth_data (fields, options.form_data.focus_field - 1)));
 
   return w;
 }
@@ -1057,10 +1144,12 @@ form_print_field (guint fn)
       break;
     case YAD_FIELD_NUM:
       if (options.common_data.quoted_output)
-        g_printf ("'%f'%s", gtk_spin_button_get_value (GTK_SPIN_BUTTON (g_slist_nth_data (fields, fn))),
+        g_printf ("'%.*g'%s", options.common_data.float_precision,
+                  gtk_spin_button_get_value (GTK_SPIN_BUTTON (g_slist_nth_data (fields, fn))),
                   options.common_data.separator);
       else
-        g_printf ("%f%s", gtk_spin_button_get_value (GTK_SPIN_BUTTON (g_slist_nth_data (fields, fn))),
+        g_printf ("%.*g%s", options.common_data.float_precision,
+                  gtk_spin_button_get_value (GTK_SPIN_BUTTON (g_slist_nth_data (fields, fn))),
                   options.common_data.separator);
       break;
     case YAD_FIELD_CHECK:

@@ -282,6 +282,10 @@ entry_create_widget (GtkWidget * dlg)
           g_object_unref (completion_model);
 
           gtk_entry_completion_set_text_column (completion, 0);
+
+          if (options.common_data.complete != YAD_COMPLETE_SIMPLE)
+            gtk_entry_completion_set_match_func (completion, check_complete, NULL, NULL);
+
           g_object_unref (completion);
         }
 
@@ -321,7 +325,7 @@ void
 entry_print_result (void)
 {
   if (options.entry_data.numeric)
-    g_print ("%lf\n", gtk_spin_button_get_value (GTK_SPIN_BUTTON (entry)));
+    g_print ("%.*g\n", options.common_data.float_precision, gtk_spin_button_get_value (GTK_SPIN_BUTTON (entry)));
   else if (is_combo)
     {
       if (options.common_data.num_output)
