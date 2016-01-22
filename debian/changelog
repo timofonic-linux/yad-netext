@@ -1,3 +1,9 @@
+yad (0.33.1b) trusty; urgency=medium
+
+  * release 0.33.1 i386
+
+ -- NetBit73 <netbit73@gmail.com>  Fri, 22 Jan 2016 15:31:18 +0200
+
 yad (0.33.1A) trusty; urgency=medium
 
   * release 0.33.1
