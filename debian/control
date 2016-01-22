@@ -7,7 +7,7 @@ Standards-Version: 3.9.5
 Homepage: https://sourceforge.net/projects/yad-dialog/
 
 Package: yad
-Architecture: all
+Architecture: amd64
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Yet Another Dialog - dialogs for shell
  Yad (yet another dialog) is a fork of Zenity with many improvements, such
