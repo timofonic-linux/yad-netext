@@ -2,7 +2,7 @@ Source: yad
 Section: x11
 Priority: extra
 Maintainer: NetBit73 <netbit73@gmail.com>
-Build-Depends: quilt (>= 0.46-7~), debhelper (>= 7), autotools-dev, mime-support, gettext, intltool, libgtk2.0-dev, libcroco3, libxml-parser-perl, libxml2, libexpat1, gawk, libwebkitgtk-dev
+Build-Depends: quilt (>= 0.46-7~), debhelper (>= 7), autotools-dev, mime-support, gettext, intltool, libgtk2.0-dev, libcroco3, libxml-parser-perl, libxml2, libexpat1, gawk, libwebkitgtk-dev, libwebkitgtk-1.0-0  
 Standards-Version: 3.9.5
 Homepage: https://sourceforge.net/projects/yad-dialog/
 
