@@ -1,3 +1,9 @@
+yad (0.33.D) trusty; urgency=medium
+
+  * release 0.33.1  zmiana ikony
+
+ -- NetBit73 <netbit73@gmail.com>  Mon, 15 Feb 2016 19:17:18 +0200
+
 yad (0.33.C) trusty; urgency=medium
 
   * release 0.33.1  libwebkitgtk-1.0-0
