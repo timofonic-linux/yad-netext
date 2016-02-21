@@ -1,4 +1,4 @@
-AC_INIT([YAD], [0.33.1], [https://sourceforge.net/p/yad-dialog/tickets/], yad, [https://sourceforge.net/projects/yad-dialog/])
+AC_INIT([YAD], [0.34.0], [https://sourceforge.net/p/yad-dialog/tickets/], yad, [https://sourceforge.net/projects/yad-dialog/])
 AC_CONFIG_AUX_DIR([build])
 
 AM_INIT_AUTOMAKE([1.11 foreign dist-xz no-dist-gzip])
@@ -28,11 +28,13 @@ case "$with_gtk" in
         GTK_MODULE="gtk+-3.0"
         GTK_REQUIRED="3.0.0"
         GTK_PRINT="gtk+-unix-print-3.0"
+        WEBKIT="webkitgtk-3.0"
         ;;
     gtk2)
         GTK_MODULE="gtk+-2.0"
         GTK_REQUIRED="2.16.0"
         GTK_PRINT="gtk+-unix-print-2.0"
+        WEBKIT="webkit-1.0"
         ;;
 esac
 PKG_CHECK_MODULES([GTK], [$GTK_MODULE >= $GTK_REQUIRED $GTK_PRINT])
@@ -54,9 +56,10 @@ AC_ARG_ENABLE([html],
 	[AS_HELP_STRING([--enable-html],
 			[Build YAD with HTML widget])],
 	[build_html=$enableval], [build_html=yes])
-have_html=no
 if test x$build_html = xyes; then
-    PKG_CHECK_MODULES([HTML], [webkit-1.0], [have_html=yes], [have_html=no])
+    PKG_CHECK_MODULES([HTML], [$WEBKIT], [have_html=yes], [have_html=no])
+else
+    have_html=no
 fi
 AC_SUBST([HTML_CFLAGS])
 AC_SUBST([HTML_LIBS])

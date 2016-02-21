@@ -185,7 +185,7 @@ Run dialog in fullscreen mode. This option may not work on all window managers.
 .TP
 .B \-\-splash
 Open window with "splashscreen" window hints. For details see description of \fI_NET_WM_WINDOW_TYPE_SPLASH\fP
-in EWMH specification. The behavior of dialog with this option is HIGHLY DEPENDS on settings of window manager you use.
+in EWMH specification. The behavior of dialog with this option is HIGHLY DEPENDS on settings of your window manager.
 .TP
 .B \-\-no-focus
 Dialog window never take focus.
@@ -206,7 +206,7 @@ Add specified path to the standard list of directories for looking for icons. Th
 Read extra arguments from given file instead of command line. Each line of a file treats as a single argument.
 .TP
 .B \-\-gtkrc=\fIFILENAME\fP
-Read and parse additional GTK+ settings from given file.
+Read and parse additional GTK+ settings from given file. This option doesn't work with GTK+-3.x builds.
 
 .SS Calendar options
 .TP
@@ -378,6 +378,15 @@ form \fI"[FAMILY-LIST] [STYLE-OPTIONS] [SIZE]"\fP.
 .TP
 .B \-\-preview
 Set the preview text.
+.TP
+.B \-\-separate-output
+Separate output of selected font description.
+.TP
+.B \-\-separator=\fISTRING\fP
+Set output separator character. Default is `|'.
+.TP
+.B \-\-quoted-output
+Output data will be in shell-style quotes.
 
 .SS Form options
 .TP
@@ -416,7 +425,7 @@ Add field to form. Type may be \fIH\fP, \fIRO\fP, \fINUM\fP, \fICHK\fP, \fICB\fP
 .br
 \fBSCL\fP - scale field. Value of this field in a range 0..100.
 .br
-\fBCLR\fP - color selection button.
+\fBCLR\fP - color selection button. Output values for this field generates in the same manner as for color dialog.
 .br
 \fBBTN\fP - button field. Label may be in form text in a form \fILABEL[!ICON[!TOOLTIP]]\fP where `!' is an item separator. \fILABEL\fP is a text of button label or gtk stock id. \fIICON\fP is a buttons icon (stock id or file name). \fITOOLTIP\fP is an optional text for popup help string. Initial value is a command which is running when button is clicked. A special sympols \fI%N\fP in command are replaced by value of field \fIN\fP. If command starts with \fI@\fP, the output of command will be parsed and lines started with numbers will be treats as a new field values.
 .br
@@ -562,6 +571,11 @@ When double-click specified \fIEnter\fP acts as a double-click and \fICtrl+Enter
 If \fICMD\fP starts with \fI@\fP, its output will replace values of current row.
 This option doesn't work with \fI--editable\fP.
 .TP
+.B \-\-select-action=\fICMD\fP
+Set the \fICMD\fP as a action when selection is changed. \fICMD\fP will be launched with values of all columns as an arguments.
+\fICMD\fP may contain a special character `%s' for setting a position for arguments. By default arguments will be concatenated to the end of \fICMD\fP.
+This option doesn't work with \fI--multiple\fP.
+.TP
 .B \-\-regex-search
 Use regular expressions in search for text fields.
 .TP
@@ -579,16 +593,26 @@ Sending FormFeed character to list clears it. This symbol may be sent as \fIecho
 .SS Multi progress bars dialog options
 .TP
 .B \-\-bar=\fILABEL[:TYPE]\fP
-Add progress bar. \fILABEL\fP is a text label for progress bar. \fITYPE\fP is a progress bar type. Types are: \fINORM\fP for normal progress bar, \fIRTL\fP for inverted progress bar and \fIPULSE\fP for pulsate progress bar.
+Add progress bar. \fILABEL\fP is a text label for progress bar. \fITYPE\fP is a progress bar type.
+Types are: \fINORM\fP for normal progress bar, \fIRTL\fP for inverted progress bar and \fIPULSE\fP for pulsate progress bar.
 .TP
 .B \-\-vertical
 Set vertical orientation of progress bars.
 .TP
 .B \-\-align=\fITYPE\fP
 Set alignment of bar labels. Possible types are \fIleft\fP, \fIcenter\fP or \fIright\fP. Default is left.
+.TP
+.B \-\-auto\-close
+Close dialog when 100% has been reached for all of non-pulsating progress bars.
+.TP
+.B \-\-watch-bar\fINUMBER\fP
+Watch for 100% of bar \fINUMBER\fP for close dialog.
+.TP
+.B \-\-auto\-kill
+Kill parent process if cancel button is pressed.
 .PP
-Initial values for bars set as extra arguments. Each lines with progress data passed to stdin must be started from \fIN:\fP where \fIN\fP is a number of progress bar. Rest is
-the same as in \fIprogress\fP dialog.
+Initial values for bars set as an extra arguments. Each lines with progress data passed to stdin must be started
+from \fIN:\fP where \fIN\fP is a number of progress bar.
 
 .SS Notebook options
 .TP

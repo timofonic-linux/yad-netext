@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with YAD. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2008-2015, Victor Ananjevsky <ananasik@gmail.com>
+ * Copyright (C) 2008-2016, Victor Ananjevsky <ananasik@gmail.com>
  */
 
 #include <stdlib.h>
@@ -107,9 +107,11 @@ expand_action (gchar * cmd)
                 case YAD_FIELD_COLOR:
                   {
                     GdkColor c;
+                    GtkColorButton *cb = GTK_COLOR_BUTTON (g_slist_nth_data (fields, num));
 
-                    gtk_color_button_get_color (GTK_COLOR_BUTTON (g_slist_nth_data (fields, num)), &c);
-                    buf = gdk_color_to_string (&c);
+                    gtk_color_button_get_color (cb, &c);
+                    buf = get_color (&c, gtk_color_button_get_alpha (cb));
+                    g_string_append (xcmd, buf ? buf : "");
                     g_free (buf);
                     break;
                   }
@@ -127,7 +129,7 @@ expand_action (gchar * cmd)
                     g_free (txt);
                     g_free (buf);
                   }
-                default:;
+                default: ;
                 }
               i = j;
             }
@@ -426,6 +428,9 @@ select_files_cb (GtkEntry * entry, GtkEntryIconPosition pos, GdkEventButton * ev
       gtk_file_chooser_set_select_multiple (GTK_FILE_CHOOSER (dlg), TRUE);
       gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dlg), path);
 
+      if (options.common_data.show_hidden)
+        gtk_file_chooser_set_show_hidden (GTK_FILE_CHOOSER (dlg), TRUE);
+
       /* add preview */
       if (options.common_data.preview)
         {
@@ -509,6 +514,9 @@ create_files_cb (GtkEntry * entry, GtkEntryIconPosition pos, GdkEventButton * ev
                                              GTK_STOCK_OK, GTK_RESPONSE_ACCEPT, NULL);
         }
       gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dlg), path);
+
+      if (options.common_data.show_hidden)
+        gtk_file_chooser_set_show_hidden (GTK_FILE_CHOOSER (dlg), TRUE);
 
       /* add preview */
       if (options.common_data.preview)
@@ -1213,13 +1221,17 @@ form_print_field (guint fn)
       break;
     case YAD_FIELD_COLOR:
       {
+        gchar *cs;
         GdkColor c;
+        GtkColorButton *cb = GTK_COLOR_BUTTON (g_slist_nth_data (fields, fn));
 
-        gtk_color_button_get_color (GTK_COLOR_BUTTON (g_slist_nth_data (fields, fn)), &c);
+        gtk_color_button_get_color (cb, &c);
+        cs = get_color (&c, gtk_color_button_get_alpha (cb));
         if (options.common_data.quoted_output)
-          g_printf ("'%s'%s", gdk_color_to_string (&c), options.common_data.separator);
+          g_printf ("'%s'%s", cs, options.common_data.separator);
         else
-          g_printf ("%s%s", gdk_color_to_string (&c), options.common_data.separator);
+          g_printf ("%s%s", cs, options.common_data.separator);
+        g_free (cs);
         break;
       }
     case YAD_FIELD_SCALE:

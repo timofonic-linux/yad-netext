@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with YAD. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2008-2015, Victor Ananjevsky <ananasik@gmail.com>
+ * Copyright (C) 2008-2016, Victor Ananjevsky <ananasik@gmail.com>
  */
 
 #include <stdlib.h>
@@ -181,6 +181,8 @@ static GOptionEntry common_options[] = {
     N_("Allow multiple selection"), NULL },
   { "add-preview", 0, 0, G_OPTION_ARG_NONE, &options.common_data.preview,
     N_("Enable preview"), NULL },
+  { "show-hidden", 0, 0, G_OPTION_ARG_NONE, &options.common_data.show_hidden,
+    N_("Show hidden files in file selection dialogs"), NULL },
   { "filename", 0, 0, G_OPTION_ARG_FILENAME, &options.common_data.uri,
     N_("Set source filename"), N_("FILENAME") },
   { "vertical", 0, 0, G_OPTION_ARG_NONE, &options.common_data.vertical,
@@ -281,6 +283,8 @@ static GOptionEntry font_options[] = {
     N_("Alias for --font"), NULL },
   { "preview", 0, 0, G_OPTION_ARG_STRING, &options.font_data.preview,
     N_("Set text string for preview"), N_("TEXT") },
+  { "separate-output", 0, 0, G_OPTION_ARG_NONE, &options.font_data.separate_output,
+    N_("Separate output of font description"), NULL },
   { NULL }
 };
 
@@ -382,6 +386,8 @@ static GOptionEntry list_options[] = {
     N_("Set the limit of rows in list"), N_("NUMBER") },
   { "dclick-action", 0, 0, G_OPTION_ARG_STRING, &options.list_data.dclick_action,
     N_("Set double-click action"), N_("CMD") },
+  { "select-action", 0, 0, G_OPTION_ARG_STRING, &options.list_data.select_action,
+    N_("Set select action"), N_("CMD") },
   { "regex-search", 0, 0, G_OPTION_ARG_NONE, &options.list_data.regex_search,
     N_("Use regex in search"), NULL },
   { NULL }
@@ -392,6 +398,8 @@ static GOptionEntry multi_progress_options[] = {
     N_("Display multi progress bars dialog"), NULL },
   { "bar", 0, 0, G_OPTION_ARG_CALLBACK, add_bar,
     N_("Add the progress bar (norm, rtl or pulse)"), N_("LABEL[:TYPE]") },
+  { "watch-bar", 0, 0, G_OPTION_ARG_INT, &options.multi_progress_data.watch_bar,
+    N_("Watch for specific bar for auto close"), N_("NUMBER") },
   { "align", 0, G_OPTION_FLAG_NOALIAS, G_OPTION_ARG_CALLBACK, set_align,
     N_("Set alignment of bar labels (left, center or right)"), N_("TYPE") },
   { "auto-close", 0, G_OPTION_FLAG_NOALIAS, G_OPTION_ARG_NONE, &options.progress_data.autoclose,
@@ -1257,6 +1265,7 @@ yad_options_init (void)
   options.common_data.align = 0.0;
   options.common_data.listen = FALSE;
   options.common_data.preview = FALSE;
+  options.common_data.show_hidden = FALSE;
   options.common_data.quoted_output = FALSE;
   options.common_data.num_output = FALSE;
   options.common_data.filters = NULL;
@@ -1304,6 +1313,7 @@ yad_options_init (void)
 
   /* Initialize font data */
   options.font_data.preview = NULL;
+  options.font_data.separate_output = FALSE;
 
   /* Initialize form data */
   options.form_data.fields = NULL;
@@ -1349,11 +1359,13 @@ yad_options_init (void)
   options.list_data.limit = 0;
   options.list_data.ellipsize = PANGO_ELLIPSIZE_NONE;
   options.list_data.dclick_action = NULL;
+  options.list_data.select_action = NULL;
   options.list_data.regex_search = FALSE;
   options.list_data.clickable = TRUE;
 
   /* Initialize multiprogress data */
   options.multi_progress_data.bars = NULL;
+  options.multi_progress_data.watch_bar = 0;
 
   /* Initialize notebook data */
   options.notebook_data.tabs = NULL;
