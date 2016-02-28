@@ -1,14 +1,20 @@
+yad (0.34.2) trusty; urgency=medium
+
+  * release 0.34.2
+
+ -- NetBit73 <netbit73@gmail.com>  Sun, 28 Feb 2016 13:09:18 +0200
+
 yad (0.34.1) trusty; urgency=medium
 
   * release 0.34.1
 
- -- NetBit73 <netbit73@gmail.com>  San, 25 Feb 2016 21:22:18 +0200
+ -- NetBit73 <netbit73@gmail.com>  Thu, 25 Feb 2016 21:22:18 +0200
 
 yad (0.34.0) trusty; urgency=medium
 
   * release 0.34  
 
- -- NetBit73 <netbit73@gmail.com>  San, 21 Feb 2016 18:17:18 +0200
+ -- NetBit73 <netbit73@gmail.com>  Sun, 21 Feb 2016 18:17:18 +0200
 
 yad (0.33.D) trusty; urgency=medium
 
@@ -68,7 +74,7 @@ yad (0.31.2a) trusty; urgency=medium
 
   * release 0.31.2
 
- -- NetBit73 <netbit73@gmail.com>  FRi, 09 Oct 2015 12:12:18 +0200
+ -- NetBit73 <netbit73@gmail.com>  Fri, 09 Oct 2015 12:12:18 +0200
 
 yad (0.31.1a) trusty; urgency=medium
 
