@@ -534,6 +534,8 @@ static GOptionEntry text_options[] = {
     N_("Set text margins"), N_("SIZE") },
   { "tail", 0, 0, G_OPTION_ARG_NONE, &options.text_data.tail,
     N_("Autoscroll to end of text"), NULL },
+  { "show-cursor", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &options.text_data.hide_cursor,
+    N_("Show cursor in read-only mode"), NULL },
   { "show-uri", 0, 0, G_OPTION_ARG_NONE, &options.text_data.uri,
     N_("Make URI clickable"), NULL },
   { "uri-color", 0, 0, G_OPTION_ARG_STRING, &options.text_data.uri_color,
@@ -639,6 +641,10 @@ add_column (const gchar * option_name, const gchar * value, gpointer data, GErro
             col->type = YAD_COLUMN_IMAGE;
           else if (strcasecmp (cstr[1], "HD") == 0)
             col->type = YAD_COLUMN_HIDDEN;
+          else if (strcasecmp (cstr[1], "BAR") == 0)
+            col->type = YAD_COLUMN_BAR;
+          else if (strcasecmp (cstr[1], "SZ") == 0)
+            col->type = YAD_COLUMN_SIZE;
           else
             col->type = YAD_COLUMN_TEXT;
         }
@@ -1423,6 +1429,7 @@ yad_options_init (void)
   options.text_data.margins = 0;
   options.text_data.tail = FALSE;
   options.text_data.uri = FALSE;
+  options.text_data.hide_cursor = TRUE;
   options.text_data.uri_color = "blue";
 }
 

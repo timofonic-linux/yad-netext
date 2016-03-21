@@ -105,9 +105,11 @@ typedef enum {
 typedef enum {
   YAD_COLUMN_TEXT = 0,
   YAD_COLUMN_NUM,
+  YAD_COLUMN_SIZE,
   YAD_COLUMN_FLOAT,
   YAD_COLUMN_CHECK,
   YAD_COLUMN_RADIO,
+  YAD_COLUMN_BAR,
   YAD_COLUMN_IMAGE,
   YAD_COLUMN_HIDDEN,
   YAD_COLUMN_ATTR_FORE,
@@ -375,6 +377,7 @@ typedef struct {
   gint margins;
   gboolean tail;
   gboolean uri;
+  gboolean hide_cursor;
   gchar *uri_color;
 } YadTextData;
 
@@ -535,6 +538,7 @@ void read_settings (void);
 void write_settings (void);
 
 void update_preview (GtkFileChooser *chooser, GtkWidget *p);
+void filechooser_mapped (GtkWidget *w, gpointer data);
 
 GdkPixbuf *get_pixbuf (gchar *name, YadIconSize size);
 gchar *get_color (GdkColor *c, guint64 alpha);
