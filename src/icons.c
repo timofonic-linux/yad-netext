@@ -20,6 +20,7 @@
 #include "yad.h"
 
 static GtkWidget *icon_view;
+static GtkListStore *store;
 
 enum {
   COL_FILENAME = 0,
@@ -259,12 +260,8 @@ parse_desktop_file (gchar * filename)
 
           /* get name */
           if (options.icons_data.generic)
-            {
-              ent->name = g_key_file_get_locale_string (kf, "Desktop Entry", "GenericName", NULL, NULL);
-              if (!ent->name)
-                ent->name = g_key_file_get_locale_string (kf, "Desktop Entry", "Name", NULL, NULL);
-            }
-          else
+            ent->name = g_key_file_get_locale_string (kf, "Desktop Entry", "GenericName", NULL, NULL);
+          if (!ent->name)
             ent->name = g_key_file_get_locale_string (kf, "Desktop Entry", "Name", NULL, NULL);
 
           /* use filename as a fallback */
@@ -330,7 +327,7 @@ parse_desktop_file (gchar * filename)
 }
 
 static void
-read_dir (GtkListStore * store)
+read_dir ()
 {
   GDir *dir;
   const gchar *filename;
@@ -342,6 +339,8 @@ read_dir (GtkListStore * store)
       g_printerr (_("Unable to open directory %s: %s\n"), options.icons_data.directory, err->message);
       return;
     }
+
+  gtk_list_store_clear (store);
 
   while ((filename = g_dir_read_name (dir)) != NULL)
     {
@@ -379,11 +378,19 @@ read_dir (GtkListStore * store)
   g_dir_close (dir);
 }
 
+#ifdef HAVE_GIO
+static void
+dir_changed_cb (GFileMonitor *mon, GFile *file, GFile *ofile, GFileMonitorEvent ev, gpointer data)
+{
+  if (ev == G_FILE_MONITOR_EVENT_DELETED || ev == G_FILE_MONITOR_EVENT_CREATED)
+    read_dir ();
+}
+#endif
+
 GtkWidget *
 icons_create_widget (GtkWidget * dlg)
 {
   GtkWidget *w;
-  GtkListStore *store;
 
   w = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (w), GTK_SHADOW_ETCHED_IN);
@@ -439,7 +446,7 @@ icons_create_widget (GtkWidget * dlg)
 
   /* handle directory */
   if (options.icons_data.directory)
-    read_dir (store);
+    read_dir ();
   else if (options.common_data.listen)
     {
       /* read from stdin */
@@ -454,12 +461,24 @@ icons_create_widget (GtkWidget * dlg)
         }
     }
 
-  g_object_unref (store);
-
   if (!options.icons_data.compact)
     g_signal_connect (G_OBJECT (icon_view), "item-activated", G_CALLBACK (activate_cb), NULL);
   else
     g_signal_connect (G_OBJECT (icon_view), "row-activated", G_CALLBACK (activate_cb), NULL);
+
+#ifdef HAVE_GIO
+  /* start file monitor */
+  if (options.icons_data.monitor && options.icons_data.directory)
+    {
+      GFile *file = g_file_new_for_path (options.icons_data.directory);
+      if (file)
+        {
+          GFileMonitor *mon = g_file_monitor_directory (file, 0, NULL, NULL);
+          g_signal_connect (G_OBJECT (mon), "changed", G_CALLBACK (dir_changed_cb), NULL);
+          g_object_unref (file);
+        }
+    }
+#endif
 
   gtk_container_add (GTK_CONTAINER (w), icon_view);
 

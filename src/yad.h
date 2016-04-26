@@ -34,6 +34,17 @@
 #include <gtk/gtkx.h>
 #endif
 
+#ifdef HAVE_SPELL
+#include <gtkspell/gtkspell.h>
+#endif
+
+#ifdef HAVE_SOURCEVIEW
+#include <gtksourceview/gtksourceview.h>
+#include <gtksourceview/gtksourcebuffer.h>
+#include <gtksourceview/gtksourcelanguage.h>
+#include <gtksourceview/gtksourcelanguagemanager.h>
+#endif
+
 G_BEGIN_DECLS
 
 #define YAD_SETTINGS_FILE "yad.conf"
@@ -285,6 +296,9 @@ typedef struct {
   gboolean single_click;
   guint width;
   gchar *term;
+#ifdef HAVE_GIO
+  gboolean monitor;
+#endif
 } YadIconsData;
 
 typedef struct {
@@ -307,6 +321,7 @@ typedef struct {
   gchar *select_action;
   gboolean regex_search;
   gboolean clickable;
+  gboolean no_selection;
 } YadListData;
 
 typedef struct {
@@ -381,6 +396,12 @@ typedef struct {
   gchar *uri_color;
 } YadTextData;
 
+#ifdef HAVE_SOURCEVIEW
+typedef struct {
+  gchar *lang;
+} YadSourceData;
+#endif
+
 typedef struct {
   gchar *uri;
   gchar *font;
@@ -401,6 +422,10 @@ typedef struct {
   YadCompletionType complete;
   GList *filters;
   key_t key;
+#ifdef HAVE_SPELL
+  gboolean enable_spell;
+  gchar *spell_lang;
+#endif
 } YadCommonData;
 
 typedef struct {
@@ -430,6 +455,9 @@ typedef struct {
   YadProgressData progress_data;
   YadScaleData scale_data;
   YadTextData text_data;
+#ifdef HAVE_SOURCEVIEW
+  YadSourceData source_data;
+#endif
 
   gchar *gtkrc_file;
 
@@ -454,7 +482,6 @@ typedef struct {
   guint timeout;
   gchar *to_indicator;
   gboolean show_remain;
-  gboolean always_selected;
   gboolean combo_always_editable;
   gboolean ignore_unknown;
   GtkIconTheme *icon_theme;

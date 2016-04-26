@@ -191,6 +191,12 @@ static GOptionEntry common_options[] = {
     N_("Identifier of embedded dialogs"), N_("KEY") },
   { "complete", 0, 0, G_OPTION_ARG_CALLBACK, set_complete_type,
     N_("Set extended completion for entries (any, all, or regex)"), N_("TYPE") },
+#ifdef HAVE_SPELL
+  { "enable-spell", 0, 0, G_OPTION_ARG_NONE, &options.common_data.enable_spell,
+    N_("Enable spell check for text"), NULL },
+  { "spell-lang", 0, 0, G_OPTION_ARG_STRING, &options.common_data.spell_lang,
+    N_("Set spell checking language"), N_("LANGUAGE") },
+#endif
   { NULL }
 };
 
@@ -346,6 +352,10 @@ static GOptionEntry icons_options[] = {
     N_("Sort items in descending order"), NULL },
   { "single-click", 0, 0, G_OPTION_ARG_NONE, &options.icons_data.single_click,
     N_("Activate items by single click"), NULL },
+#ifdef HAVE_GIO
+  { "monitor", 0, 0, G_OPTION_ARG_NONE, &options.icons_data.monitor,
+    N_("Watch fot changes in directory"), NULL },
+#endif
   { NULL }
 };
 
@@ -390,6 +400,8 @@ static GOptionEntry list_options[] = {
     N_("Set select action"), N_("CMD") },
   { "regex-search", 0, 0, G_OPTION_ARG_NONE, &options.list_data.regex_search,
     N_("Use regex in search"), NULL },
+  { "no-selection", 0, 0, G_OPTION_ARG_NONE, &options.list_data.no_selection,
+    N_("Disable selection"), NULL },
   { NULL }
 };
 
@@ -542,6 +554,14 @@ static GOptionEntry text_options[] = {
     N_("Use specified color for links"), N_("COLOR") },
   { NULL }
 };
+
+#ifdef HAVE_SOURCEVIEW
+static GOptionEntry source_options[] = {
+  { "lang", 0, 0, G_OPTION_ARG_STRING, &options.source_data.lang,
+    N_("Use specified langauge for syntax highlighting"), N_("LANG") },
+  { NULL }
+};
+#endif
 
 static GOptionEntry filter_options[] = {
   { "file-filter", 0, 0, G_OPTION_ARG_CALLBACK, add_file_filter,
@@ -1277,6 +1297,10 @@ yad_options_init (void)
   options.common_data.filters = NULL;
   options.common_data.key = -1;
   options.common_data.complete = YAD_COMPLETE_SIMPLE;
+#ifdef HAVE_SPELL
+  options.common_data.enable_spell = FALSE;
+  options.common_data.spell_lang = NULL;
+#endif
 
   /* Initialize calendar data */
   options.calendar_data.day = -1;
@@ -1347,6 +1371,9 @@ yad_options_init (void)
   options.icons_data.sort_by_name = FALSE;
   options.icons_data.descend = FALSE;
   options.icons_data.single_click = FALSE;
+#ifdef HAVE_GIO
+  options.icons_data.monitor = FALSE;
+#endif
 
   /* Initialize list data */
   options.list_data.columns = NULL;
@@ -1368,6 +1395,7 @@ yad_options_init (void)
   options.list_data.select_action = NULL;
   options.list_data.regex_search = FALSE;
   options.list_data.clickable = TRUE;
+  options.list_data.no_selection = FALSE;
 
   /* Initialize multiprogress data */
   options.multi_progress_data.bars = NULL;
@@ -1431,6 +1459,11 @@ yad_options_init (void)
   options.text_data.uri = FALSE;
   options.text_data.hide_cursor = TRUE;
   options.text_data.uri_color = "blue";
+
+#ifdef HAVE_SOURCEVIEW
+  /* Initialize text data */
+  options.source_data.lang = NULL;
+#endif
 }
 
 GOptionContext *
@@ -1571,6 +1604,14 @@ yad_create_context (void)
   g_option_group_add_entries (a_group, text_options);
   g_option_group_set_translation_domain (a_group, GETTEXT_PACKAGE);
   g_option_context_add_group (tmp_ctx, a_group);
+
+#ifdef HAVE_SOURCEVIEW
+  /* Adds sourceview option entries */
+  a_group = g_option_group_new ("source", _("SourceView options"), _("Show SourceView options"), NULL, NULL);
+  g_option_group_add_entries (a_group, source_options);
+  g_option_group_set_translation_domain (a_group, GETTEXT_PACKAGE);
+  g_option_context_add_group (tmp_ctx, a_group);
+#endif
 
   /* Adds file filters option entries */
   a_group = g_option_group_new ("filter", _("File filter options"), _("Show file filter options"), NULL, NULL);

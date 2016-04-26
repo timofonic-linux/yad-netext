@@ -1,4 +1,4 @@
-AC_INIT([YAD], [0.35.0], [https://sourceforge.net/p/yad-dialog/tickets/], yad, [https://sourceforge.net/projects/yad-dialog/])
+AC_INIT([YAD], [0.36.0], [https://sourceforge.net/p/yad-dialog/tickets/], yad, [https://sourceforge.net/projects/yad-dialog/])
 AC_CONFIG_AUX_DIR([build])
 
 AM_INIT_AUTOMAKE([1.11 foreign dist-xz no-dist-gzip])
@@ -29,12 +29,16 @@ case "$with_gtk" in
         GTK_REQUIRED="3.0.0"
         GTK_PRINT="gtk+-unix-print-3.0"
         WEBKIT="webkitgtk-3.0"
+        SPELL="gtkspell3-3.0"
+        SOURCEVIEW="gtksourceview-3.0"
         ;;
     gtk2)
         GTK_MODULE="gtk+-2.0"
         GTK_REQUIRED="2.16.0"
         GTK_PRINT="gtk+-unix-print-2.0"
         WEBKIT="webkit-1.0"
+        SPELL="gtkspell3-2.0"
+        SOURCEVIEW="gtksourceview-2.0"
         ;;
 esac
 PKG_CHECK_MODULES([GTK], [$GTK_MODULE >= $GTK_REQUIRED $GTK_PRINT])
@@ -67,6 +71,57 @@ AM_CONDITIONAL([HTML], [test x$have_html = xyes])
 
 if test x$have_html = xyes; then
     AC_DEFINE([HAVE_HTML], [1], [Define this if you have webkit installed])
+fi
+
+dnl gio support
+AC_ARG_ENABLE([gio],
+	[AS_HELP_STRING([--enable-gio],
+			[Build YAD with GIO support])],
+	[build_gio=$enableval], [build_gio=yes])
+if test x$build_gio = xyes; then
+    PKG_CHECK_MODULES([GIO], [gio-2.0], [have_gio=yes], [have_gio=no])
+else
+    have_gio=no
+fi
+AC_SUBST([GIO_CFLAGS])
+AC_SUBST([GIO_LIBS])
+
+if test x$have_gio = xyes; then
+    AC_DEFINE([HAVE_GIO], [1], [Define this if you have glib gio framework])
+fi
+
+dnl spell check
+AC_ARG_ENABLE([spell],
+	[AS_HELP_STRING([--enable-spell],
+			[Build YAD with Spell check support (default - no)])],
+	[with_spell=$enableval], [with_spell=no])
+if test x$with_spell = xyes; then
+    PKG_CHECK_MODULES([SPELL], [$SPELL], [have_spell=yes], [have_spell=no])
+else
+    have_spell=no
+fi
+AC_SUBST([SPELL_CFLAGS])
+AC_SUBST([SPELL_LIBS])
+
+if test x$have_spell = xyes; then
+    AC_DEFINE([HAVE_SPELL], [1], [Define this if you need spell check support])
+fi
+
+dnl sourceview
+AC_ARG_ENABLE([sourceview],
+	[AS_HELP_STRING([--enable-sourceview],
+			[Build YAD with GtkSourceView support (default - no)])],
+	[with_sourceview=$enableval], [with_sourceview=no])
+if test x$with_spell = xyes; then
+    PKG_CHECK_MODULES([SOURCEVIEW], [$SOURCEVIEW], [have_sourceview=yes], [have_sourceview=no])
+else
+    have_sourceview=no
+fi
+AC_SUBST([SOURCEVIEW_CFLAGS])
+AC_SUBST([SOURCEVIEW_LIBS])
+
+if test x$have_sourceview = xyes; then
+    AC_DEFINE([HAVE_SOURCEVIEW], [1], [Define this if you need GtkSourceView support])
 fi
 
 dnl icon browser
@@ -117,5 +172,8 @@ echo "Build configuratioh:"
 echo "  GTK+ version         - $with_gtk"
 echo "  Path to rgb.txt      - $with_rgb"
 echo "  HTML widget          - $have_html"
+echo "  Spell checking       - $have_spell"
+echo "  GtkSourceView        - $have_sourceview"
+echo "  GIO support          - $have_gio"
 echo "  Icon browser         - $build_ib"
 echo

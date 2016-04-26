@@ -119,7 +119,8 @@ am_yad_OBJECTS = yad-about.$(OBJEXT) yad-calendar.$(OBJEXT) \
 	yad-util.$(OBJEXT) yad-main.$(OBJEXT) $(am__objects_1)
 yad_OBJECTS = $(am_yad_OBJECTS)
 am__DEPENDENCIES_1 =
-yad_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+yad_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 yad_LINK = $(CCLD) $(yad_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o \
 	$@
 am__yad_icon_browser_SOURCES_DIST = browser.c
@@ -222,6 +223,8 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
+GIO_CFLAGS = @GIO_CFLAGS@
+GIO_LIBS = @GIO_LIBS@
 GMOFILES = @GMOFILES@
 GMSGFMT = @GMSGFMT@
 GREP = @GREP@
@@ -273,6 +276,10 @@ PO_IN_DATADIR_FALSE = @PO_IN_DATADIR_FALSE@
 PO_IN_DATADIR_TRUE = @PO_IN_DATADIR_TRUE@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
+SOURCEVIEW_CFLAGS = @SOURCEVIEW_CFLAGS@
+SOURCEVIEW_LIBS = @SOURCEVIEW_LIBS@
+SPELL_CFLAGS = @SPELL_CFLAGS@
+SPELL_LIBS = @SPELL_LIBS@
 STRIP = @STRIP@
 USE_NLS = @USE_NLS@
 VERSION = @VERSION@
@@ -326,8 +333,8 @@ yad_SOURCES = about.c calendar.c color.c dnd.c entry.c file.c font.c \
 	notification.c option.c paned.c picture.c print.c progress.c \
 	scale.c text.c util.c main.c yad.h calendar.xpm \
 	$(am__append_1)
-yad_CFLAGS = $(GTK_CFLAGS) $(HTML_CFLAGS)
-yad_LDADD = $(GTK_LIBS) $(HTML_LIBS)
+yad_CFLAGS = $(GTK_CFLAGS) $(HTML_CFLAGS) $(SPELL_CFLAGS) $(SOURCEVIEW_CFLAGS)
+yad_LDADD = $(GTK_LIBS) $(HTML_LIBS) $(SPELL_LIBS) $(SOURCEVIEW_LIBS)
 @BUILD_IB_TRUE@yad_icon_browser_SOURCES = browser.c
 @BUILD_IB_TRUE@yad_icon_browser_CFLAGS = $(GTK_CFLAGS)
 @BUILD_IB_TRUE@yad_icon_browser_LDADD = $(GTK_LIBS)

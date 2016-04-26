@@ -43,7 +43,6 @@ read_settings (void)
   settings.timeout = 0;
   settings.to_indicator = "none";
   settings.show_remain = FALSE;
-  settings.always_selected = FALSE;
   settings.combo_always_editable = FALSE;
   settings.term = "xterm -e '%s'";
   settings.open_cmd = "xdg-open '%s'";
@@ -72,8 +71,6 @@ read_settings (void)
             settings.to_indicator = g_key_file_get_string (kf, "General", "timeout_indicator", NULL);
           if (g_key_file_has_key (kf, "General", "show_remain", NULL))
             settings.show_remain = g_key_file_get_boolean (kf, "General", "show_remain", NULL);
-          if (g_key_file_has_key (kf, "General", "always_selected", NULL))
-            settings.always_selected = g_key_file_get_boolean (kf, "General", "always_selected", NULL);
           if (g_key_file_has_key (kf, "General", "combo_always_editable", NULL))
             settings.combo_always_editable = g_key_file_get_boolean (kf, "General", "combo_always_editable", NULL);
           if (g_key_file_has_key (kf, "General", "terminal", NULL))
@@ -118,8 +115,6 @@ write_settings (void)
                           " Position of timeout indicator (top, bottom, left, right, none)", NULL);
   g_key_file_set_boolean (kf, "General", "show_remain", settings.show_remain);
   g_key_file_set_comment (kf, "General", "show_remain", " Show remain seconds in timeout indicator", NULL);
-  g_key_file_set_boolean (kf, "General", "always_selected", settings.always_selected);
-  g_key_file_set_comment (kf, "General", "always_selected", " List widget always have a selection", NULL);
   g_key_file_set_boolean (kf, "General", "combo_always_editable", settings.combo_always_editable);
   g_key_file_set_comment (kf, "General", "combo_always_editable", " Combo-box in entry dialog is always editable", NULL);
   g_key_file_set_string (kf, "General", "terminal", settings.term);
@@ -127,7 +122,7 @@ write_settings (void)
   g_key_file_set_string (kf, "General", "open_command", settings.open_cmd);
   g_key_file_set_comment (kf, "General", "open_command", " Default open command (use %s for arguments placeholder)", NULL);
   g_key_file_set_string (kf, "General", "date_format", settings.date_format);
-  g_key_file_set_comment (kf, "General", "date_format", " Default date format (sett msgfmt(3) for details)", NULL);
+  g_key_file_set_comment (kf, "General", "date_format", " Default date format (see strftime(3) for details)", NULL);
   g_key_file_set_boolean (kf, "General", "ignore_unknown_options", settings.ignore_unknown);
   g_key_file_set_comment (kf, "General", "ignore_unknown_options", " Ignore unknown command-line options", NULL);
   g_key_file_set_integer (kf, "General", "max_tab", settings.max_tab);

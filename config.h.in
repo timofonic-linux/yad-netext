@@ -15,6 +15,9 @@
 /* Define if the GNU gettext() function is already present or preinstalled. */
 #undef HAVE_GETTEXT
 
+/* Define this if you have glib gio framework */
+#undef HAVE_GIO
+
 /* Define this if you have webkit installed */
 #undef HAVE_HTML
 
@@ -29,6 +32,12 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Define this if you need GtkSourceView support */
+#undef HAVE_SOURCEVIEW
+
+/* Define this if you need spell check support */
+#undef HAVE_SPELL
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H

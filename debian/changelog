@@ -1,3 +1,9 @@
+yad (0.36.N) trusty; urgency=medium
+
+  * release 0.36
+
+ -- Marcin Mach  <netbit73@gmail.com>  Tue, 26 Mar 2016 15:30:18 +0200
+
 yad (0.35.N1) trusty; urgency=medium
 
   * release 0.35

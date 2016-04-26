@@ -207,6 +207,12 @@ Read extra arguments from given file instead of command line. Each line of a fil
 .TP
 .B \-\-gtkrc=\fIFILENAME\fP
 Read and parse additional GTK+ settings from given file. This option doesn't work with GTK+-3.x builds.
+.TP
+.B \-\-enable-spell
+Enable spell checking in textview widgets
+.TP
+.B \-\-spell-lang=\fILANGUAGE\fP
+Set spell checking language to \fILANGUAGE\fP. By default language guesses from current locale.
 
 .SS Calendar options
 .TP
@@ -318,6 +324,9 @@ Numeric fields will ignore the icons.
 .TP
 .B \-\-read-dir=\fIPATH\fP
 Read .desktop files from specified directory.
+.TP
+.B \-\-monitor
+Watch for changes in directory and automatically update content of iconbox.
 .TP
 .B \-\-generic
 Use field GenericName instead of Name for shortcut label.
@@ -534,6 +543,9 @@ Disable sorting of column content by clicking on its header.
 .TP
 .B \-\-no-rules-hint
 Don't draw even and odd rows by a different colors. This option depends on your current gtk theme and may not work.
+.TP
+.B \-\-no-selection
+Disable selection in list.
 .TP
 .B \-\-print-all
 Print all data from the list.
@@ -776,6 +788,9 @@ Make links in text clickable. Links opens with \fIxdg-open\fP command.
 .TP
 .B \-\-uri-color
 Set color for links. Default is \fIblue\fP.
+.TP
+.B \-\-lang=LANGUAGE
+Highlight syntax for specified \fILANGUAGE\fP. This option works only if yad builds with gtksourceview.
 .TP
 .B \-\-listen
 Listen data from stdin even if filename was specified.
