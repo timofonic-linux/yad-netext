@@ -28,8 +28,6 @@
 static GSList *fields = NULL;
 static guint n_fields;
 
-static void button_clicked_cb (GtkButton * b, gchar * action);
-
 /* expand %N in command to fields values */
 static GString *
 expand_action (gchar * cmd)
@@ -74,7 +72,9 @@ expand_action (gchar * cmd)
                 case YAD_FIELD_MFILE:
                 case YAD_FIELD_MDIR:
                 case YAD_FIELD_DATE:
-                  arg = g_shell_quote (gtk_entry_get_text (GTK_ENTRY (g_slist_nth_data (fields, num))));
+                  buf = escape_char ((gchar *) gtk_entry_get_text (GTK_ENTRY (g_slist_nth_data (fields, num))), '"');
+                  arg = g_shell_quote (buf ? buf : "");
+                  g_free (buf);
                   break;
                 case YAD_FIELD_NUM:
                   arg = g_strdup_printf ("%.*f", options.common_data.float_precision,
@@ -118,12 +118,22 @@ expand_action (gchar * cmd)
                   {
                     GtkTextBuffer *tb;
                     GtkTextIter b, e;
+                    gchar *txt;
 
                     tb = gtk_text_view_get_buffer (GTK_TEXT_VIEW (g_slist_nth_data (fields, num)));
                     gtk_text_buffer_get_bounds (tb, &b, &e);
-                    buf = gtk_text_buffer_get_text (tb, &b, &e, FALSE);
-                    arg = escape_str (buf);
+                    txt = gtk_text_buffer_get_text (tb, &b, &e, FALSE);
+
+                    /* escape special chars */
+                    buf = escape_str (txt);
+                    g_free (txt);
+
+                    /* escape quotes */
+                    txt = escape_char (buf, '"');
                     g_free (buf);
+
+                    arg = g_shell_quote (txt ? txt : "");
+                    g_free (txt);
                   }
                 default: ;
                 }
@@ -317,7 +327,7 @@ set_field_value (guint num, gchar * value)
 
     case YAD_FIELD_BUTTON:
     case YAD_FIELD_FULL_BUTTON:
-      g_signal_connect (G_OBJECT (w), "clicked", G_CALLBACK (button_clicked_cb), value);
+      g_object_set_data_full (G_OBJECT (w), "cmd", g_strdup (value), g_free);
       break;
 
     case YAD_FIELD_TEXT:
@@ -334,12 +344,9 @@ set_field_value (guint num, gchar * value)
 }
 
 static void
-button_clicked_cb (GtkButton * b, gchar * action)
+button_clicked_cb (GtkButton * b, gpointer data)
 {
-  static gchar *newline = NULL;
-
-  if (!newline)
-    newline = g_strcompress ("\n");
+  gchar *action = (gchar *) g_object_get_data (G_OBJECT (b), "cmd");
 
   if (action && action[0])
     {
@@ -999,6 +1006,7 @@ form_create_widget (GtkWidget * dlg)
             case YAD_FIELD_BUTTON:
             case YAD_FIELD_FULL_BUTTON:
               e = gtk_button_new ();
+              g_signal_connect (G_OBJECT (e), "clicked", G_CALLBACK (button_clicked_cb), NULL);
               gtk_container_add (GTK_CONTAINER (e), get_label (fld->name, 2));
               gtk_widget_set_name (e, "yad-form-button");
               gtk_button_set_alignment (GTK_BUTTON (e), 0.5, 0.5);
