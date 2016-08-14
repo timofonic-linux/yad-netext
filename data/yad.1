@@ -1,4 +1,4 @@
-.TH YAD 1 "March 3, 2015"
+.TH YAD 1 "May 22, 2016"
 .SH NAME
 yad \- display GTK+ dialogs in shell scripts
 
@@ -80,10 +80,21 @@ Set the dialog title.
 Set the window icon.
 .TP
 .B \-\-width=\fIWIDTH\fP
-Set the dialog width.
+Set the dialog window width.
 .TP
 .B \-\-height=\fIHEIGHT\fP
-Set the dialog height.
+Set the dialog window height.
+.TP
+.B \-\-posx=\fINUMBER\fP
+Set the X position of dialog window. \fINUMBER\fP can be negative.
+.TP
+.B \-\-posy=\fINUMBER\fP
+Set the Y position of dialog window. \fINUMBER\fP can be negative.
+.TP
+.B \-\-geometry=\fIWIDTHxHEIGHT+X+Y\fP
+Use standard X Window geometry notation for placing dialog.
+When this option is used, \fIwidth\fP, \fIheight\fP, \fIposx\fP, \fIposy\fP, \fImouse\fP and \fIcenter\fP options are
+ignored. This option is obsolete for gtk3 builds.
 .TP
 .B \-\-timeout=\fITIMEOUT\fP
 Set the dialog timeout in seconds.
@@ -190,10 +201,8 @@ in EWMH specification. The behavior of dialog with this option is HIGHLY DEPENDS
 .B \-\-no-focus
 Dialog window never take focus.
 .TP
-.B \-\-geometry=\fIWIDTHxHEIGHT+X+Y\fP
-Use standard X Window geometry notation for placing dialog.
-When this option is used, \fIwidth\fP, \fIheight\fP, \fImouse\fP and \fIcenter\fP options are
-ignored.
+.B \-\-close-on-unfocus
+Close the dialog window when it loose the focus.
 .TP
 .B \-\-selectable-labels
 If set, user can select dialog's text and copy it to clipboard.
@@ -207,6 +216,12 @@ Read extra arguments from given file instead of command line. Each line of a fil
 .TP
 .B \-\-gtkrc=\fIFILENAME\fP
 Read and parse additional GTK+ settings from given file. This option doesn't work with GTK+-3.x builds.
+.TP
+.B \-\-hscroll-policy=\fITYPE\fP
+Set the policy type for horizontal scrollbars. \fITYPE\fP can be one of the \fIauto\fP, \fIalways\fP or \fInever\fP. Default is \fIauto\fP.
+.TP
+.B \-\-vscroll-policy=\fITYPE\fP
+Set the policy type for vertical scrollbars. \fITYPE\fP can be one of the \fIauto\fP, \fIalways\fP or \fInever\fP. Default is \fIauto\fP.
 .TP
 .B \-\-enable-spell
 Enable spell checking in textview widgets
@@ -437,6 +452,7 @@ Add field to form. Type may be \fIH\fP, \fIRO\fP, \fINUM\fP, \fICHK\fP, \fICB\fP
 \fBCLR\fP - color selection button. Output values for this field generates in the same manner as for color dialog.
 .br
 \fBBTN\fP - button field. Label may be in form text in a form \fILABEL[!ICON[!TOOLTIP]]\fP where `!' is an item separator. \fILABEL\fP is a text of button label or gtk stock id. \fIICON\fP is a buttons icon (stock id or file name). \fITOOLTIP\fP is an optional text for popup help string. Initial value is a command which is running when button is clicked. A special sympols \fI%N\fP in command are replaced by value of field \fIN\fP. If command starts with \fI@\fP, the output of command will be parsed and lines started with number and colon will be treats as a new field values.
+A quoting style for value when \fIsh -c\fP is used \- a single quotes aroung command and double quotes aroung -c argument
 .br
 \fBFBTN\fP - same as button field, but with full relief of a button.
 .br
@@ -535,6 +551,9 @@ Allow multiple rows to be selected.
 .B \-\-editable
 Allow changes to text.
 .TP
+.B \-\-editable-cols=\fILIST\fP
+Set the list of editable columns. \fILIST\fP must be a string of numbers separated by comma.
+.TP
 .B \-\-no-headers
 Do not show column headers.
 .TP
@@ -543,6 +562,9 @@ Disable sorting of column content by clicking on its header.
 .TP
 .B \-\-no-rules-hint
 Don't draw even and odd rows by a different colors. This option depends on your current gtk theme and may not work.
+.TP
+.B \-\-grid-lines=\fITYPE\fP
+Draw grid lines of type \fITYPE\fP in list dialog. \fITYPE\fp can be one of the \fIhor[izontal]\fP, \fIvert[ical]\fP of \fIboth\fP.
 .TP
 .B \-\-no-selection
 Disable selection in list.
@@ -575,8 +597,17 @@ Set the \fITEXT\fP as a row separator value. This feature highly depends on your
 .B \-\-limit=\fINUMBER\fP
 Set the number of rows in list dialog. Will be shown only the last \fINUMBER\fP rows. This option will take effect only when data reading from stdin.
 .TP
+.B \-\-wrap-width=\fINUMBER\fP
+Set the width of column before wrapping to \fINUMBER\fP.
+.TP
+.B \-\-wrap-cols=\fILIST\fP
+Set the list of wrapped columns. \fILIST\fP must be a string of numbers separated by comma.
+.TP
 .B \-\-ellipsize=\fITYPE\fP
 Set ellipsize mode for text columns. \fITYPE\fP may be \fINONE\fP, \fISTART\fP, \fIMIDDLE\fP or \fIEND\fP.
+.TP
+.B \-\-ellipsize-cols=\fILIST\fP
+Set the list of ellipsized columns. \fILIST\fP must be a string of numbers separated by comma.
 .TP
 .B \-\-dclick-action=\fICMD\fP
 Set the \fICMD\fP as a double-click command. When user double-clicked on row, \fICMD\fP will be launched with values of all columns as an arguments. By default double-click selects row and act as \fIOK\fP button for simple lists, set the checkbox if \fI\-\-checklist\fP specified and do nothing when list run with \fI\-\-multiple\fP option.
@@ -601,7 +632,7 @@ Output values will be shell-style quoted.
 .TP
 .B \-\-float-precision=\fINUMBER\fP
 Set precision of floating point numbers. By default precision is three digits after point.
-
+.TP
 Sending FormFeed character to list clears it. This symbol may be sent as \fIecho \-e '\\f'\fP.
 
 .SS Multi progress bars dialog options
@@ -750,7 +781,24 @@ Start with expanded log window.
 .B \-\-log-height
 Set the height of log window.
 
-.SS Text options
+.SS Multiprogress options
+.TP
+.B \-\-bar=\fILABEL[:TYPE]\fP
+Add the progress bar with type \fITYPE\fp. \fITYPE\fP can be one of the \fInorm\fP for average progress bar, \fIrtl\fP for progress bar with inverted direction, \fIpulse\fP for pulsating progress bar (m,oves on receiving data) or \fIperm\fP for permanent pulsatin progress bar. \fIprem\fP progress bar understant two commands - \fIstart\fP for start movement and \fIstop\fP for stop it.
+.TP
+.B \-\-watch-bar=\fINUMBER\fP
+Watch for specific bar for auto closing.
+.TP
+.B \-\-align=\fITYPE\fP
+Set alignment of bar labels. \fITYPE\fP can be \fIleft\fP, \fIcenter\fP or \fIright\fP.
+.TP
+.B \-\-auto-close
+Dismiss the dialog when 100% of all bars (or only watching bar) has been reached.
+.TP
+.B \-\-auto-kill
+Kill parent process if cancel button was pressed.
+
+.SS Text info options
 .TP
 .B \-\-filename=\fIFILENAME\fP
 Open specified file.
@@ -765,7 +813,7 @@ Set foreground color of text.
 Set background color of text.
 .TP
 .B \-\-fontname=\fIFONTNAME\fP
-Set text font. \fIFONTNAME\fP must be in a Pango font description format.
+Set text font. \fIFONTNAME\fP must be in a Pango font description format. By default \fIMonospace\fP is used.
 .TP
 .B \-\-wrap
 Enable text wrapping.

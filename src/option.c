@@ -43,11 +43,15 @@ static gboolean set_orient (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_print_type (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_progress_log (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_size (const gchar *, const gchar *, gpointer, GError **);
+static gboolean set_posx (const gchar *, const gchar *, gpointer, GError **);
+static gboolean set_posy (const gchar *, const gchar *, gpointer, GError **);
 #ifndef G_OS_WIN32
 static gboolean parse_signal (const gchar *, const gchar *, gpointer, GError **);
 #endif
 static gboolean add_image_path (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_complete_type (const gchar *, const gchar *, gpointer, GError **);
+static gboolean set_grid_lines (const gchar *, const gchar *, gpointer, GError **);
+static gboolean set_scroll_policy (const gchar *, const gchar *, gpointer, GError **);
 
 static gboolean about_mode = FALSE;
 static gboolean version_mode = FALSE;
@@ -79,9 +83,13 @@ static GOptionEntry general_options[] = {
   { "window-icon", 0, 0, G_OPTION_ARG_FILENAME, &options.data.window_icon,
     N_("Set the window icon"), N_("ICONPATH") },
   { "width", 0, 0, G_OPTION_ARG_INT, &options.data.width,
-    N_("Set the width"), N_("WIDTH") },
+    N_("Set the window width"), N_("WIDTH") },
   { "height", 0, 0, G_OPTION_ARG_INT, &options.data.height,
-    N_("Set the height"), N_("HEIGHT") },
+    N_("Set the window height"), N_("HEIGHT") },
+  { "posx", 0, 0, G_OPTION_ARG_CALLBACK, set_posx,
+    N_("Set the X position of a window"), N_("NUMBER") },
+  { "posy", 0, 0, G_OPTION_ARG_CALLBACK, set_posy,
+    N_("Set the Y position of a window"), N_("NUMBER") },
   { "geometry", 0, 0, G_OPTION_ARG_STRING, &options.data.geometry,
     N_("Set the window geometry"), N_("WxH+X+Y") },
   { "timeout", 0, 0, G_OPTION_ARG_INT, &options.data.timeout,
@@ -137,6 +145,8 @@ static GOptionEntry general_options[] = {
     N_("Set window fulscreen"), NULL },
   { "no-focus", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &options.data.focus,
     N_("Don't focus dialog window"), NULL },
+  { "close-on-unfocus", 0, 0, G_OPTION_ARG_NONE, &options.data.close_on_unfocus,
+    N_("Close window when it sets unfocused"), NULL },
   { "splash", 0, 0, G_OPTION_ARG_NONE, &options.data.splash,
     N_("Open window as a splashscreen"), NULL },
   { "plug", 0, 0, G_OPTION_ARG_INT, &options.plug,
@@ -151,8 +161,6 @@ static GOptionEntry general_options[] = {
   { "print-xid", 0, 0, G_OPTION_ARG_NONE, &options.print_xid,
     N_("Print X Window Id to the stderr"), NULL },
 #endif
-  { "image-path", 0, 0, G_OPTION_ARG_CALLBACK, add_image_path,
-    N_("Add path for search icons by name"), N_("PATH") },
   { NULL }
 };
 
@@ -374,10 +382,20 @@ static GOptionEntry list_options[] = {
     N_("Disable clickable column headers"), NULL },
   { "no-rules-hint", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &options.list_data.rules_hint,
     N_("Disable rules hints"), NULL },
+  { "grid-lines", 0, 0, G_OPTION_ARG_CALLBACK, set_grid_lines,
+    N_("Set grid lines (hor[izontal], vert[ical] or both)"), N_("TYPE") },
   { "print-all", 0, 0, G_OPTION_ARG_NONE, &options.list_data.print_all,
     N_("Print all data from list"), NULL },
+  { "editable-cols", 0, 0, G_OPTION_ARG_STRING, &options.list_data.editable_cols,
+    N_("Set the list of editable columns"), N_("LIST") },
+  { "wrap-width", 0, 0, G_OPTION_ARG_INT, &options.list_data.wrap_width,
+    N_("Set the width of a column for start wrapping text"), N_("NUMBER") },
+  { "wrap-cols", 0, 0, G_OPTION_ARG_STRING, &options.list_data.wrap_cols,
+    N_("Set the list of wrapped columns"), N_("LIST") },
   { "ellipsize", 0, 0, G_OPTION_ARG_CALLBACK, set_ellipsize,
     N_("Set ellipsize mode for text columns (none, start, middle or end)"), N_("TYPE") },
+  { "ellipsize-cols", 0, 0, G_OPTION_ARG_STRING, &options.list_data.ellipsize_cols,
+    N_("Set the list of ellipsized columns"), N_("LIST") },
   { "print-column", 0, 0, G_OPTION_ARG_INT, &options.list_data.print_column,
     N_("Print a specific column. By default or if 0 is specified will be printed all columns"), N_("NUMBER") },
   { "hide-column", 0, 0, G_OPTION_ARG_INT, &options.list_data.hide_column,
@@ -409,7 +427,7 @@ static GOptionEntry multi_progress_options[] = {
   { "multi-progress", 0, G_OPTION_FLAG_IN_MAIN, G_OPTION_ARG_NONE, &multi_progress_mode,
     N_("Display multi progress bars dialog"), NULL },
   { "bar", 0, 0, G_OPTION_ARG_CALLBACK, add_bar,
-    N_("Add the progress bar (norm, rtl or pulse)"), N_("LABEL[:TYPE]") },
+    N_("Add the progress bar (norm, rtl, pulse or perm)"), N_("LABEL[:TYPE]") },
   { "watch-bar", 0, 0, G_OPTION_ARG_INT, &options.multi_progress_data.watch_bar,
     N_("Watch for specific bar for auto close"), N_("NUMBER") },
   { "align", 0, G_OPTION_FLAG_NOALIAS, G_OPTION_ARG_CALLBACK, set_align,
@@ -580,6 +598,12 @@ static GOptionEntry misc_options[] = {
     N_("Print version"), NULL },
   { "gtkrc", 0, 0, G_OPTION_ARG_FILENAME, &options.gtkrc_file,
     N_("Load additional GTK settings from file"), N_("FILENAME") },
+  { "hscroll-policy", 0, 0, G_OPTION_ARG_CALLBACK, set_scroll_policy,
+    N_("Set policy for horizontal scrollbars (auto, always, never)"), N_("TYPE") },
+  { "vscroll-policy", 0, 0, G_OPTION_ARG_CALLBACK, set_scroll_policy,
+    N_("Set policy for vertical scrollbars (auto, always, never)"), N_("TYPE") },
+  { "image-path", 0, 0, G_OPTION_ARG_CALLBACK, add_image_path,
+    N_("Add path for search icons by name"), N_("PATH") },
   { NULL }
 };
 
@@ -754,6 +778,8 @@ add_bar (const gchar * option_name, const gchar * value, gpointer data, GError *
         bar->type = YAD_PROGRESS_RTL;
       else if (strcasecmp (bstr[1], "PULSE") == 0)
         bar->type = YAD_PROGRESS_PULSE;
+      else if (strcasecmp (bstr[1], "PERM") == 0)
+        bar->type = YAD_PROGRESS_PERM;
       else
         bar->type = YAD_PROGRESS_NORMAL;
     }
@@ -1051,6 +1077,20 @@ set_size (const gchar * option_name, const gchar * value, gpointer data, GError 
 }
 
 static gboolean
+set_posx (const gchar * option_name, const gchar * value, gpointer data, GError ** err)
+{
+  options.data.use_posx = TRUE;
+  options.data.posx = atol (value);
+}
+
+static gboolean
+set_posy (const gchar * option_name, const gchar * value, gpointer data, GError ** err)
+{
+  options.data.use_posy = TRUE;
+  options.data.posy = atol (value);
+}
+
+static gboolean
 add_image_path (const gchar * option_name, const gchar * value, gpointer data, GError ** err)
 {
   if (value)
@@ -1072,6 +1112,41 @@ set_complete_type (const gchar * option_name, const gchar * value, gpointer data
     g_printerr (_("Unknown completion type: %s\n"), value);
 
   return TRUE;
+}
+
+static gboolean
+set_grid_lines (const gchar * option_name, const gchar * value, gpointer data, GError ** err)
+{
+  if (strncasecmp (value, "hor", 3) == 0)
+    options.list_data.grid_lines = GTK_TREE_VIEW_GRID_LINES_HORIZONTAL;
+  else if (strncasecmp (value, "vert", 4) == 0)
+    options.list_data.grid_lines = GTK_TREE_VIEW_GRID_LINES_VERTICAL;
+  else if (strncasecmp (value, "both", 4) == 0)
+    options.list_data.grid_lines = GTK_TREE_VIEW_GRID_LINES_BOTH;
+  else
+    g_printerr (_("Unknown grid lines type: %s\n"), value);
+
+  return TRUE;
+}
+
+static gboolean
+set_scroll_policy (const gchar * option_name, const gchar * value, gpointer data, GError ** err)
+{
+  GtkPolicyType pt = GTK_POLICY_AUTOMATIC;
+
+  if (strcmp (value, "auto") == 0)
+    pt = GTK_POLICY_AUTOMATIC;
+  else if (strcmp (value, "always") == 0)
+    pt = GTK_POLICY_ALWAYS;
+  else if (strcmp (value, "never") == 0)
+    pt = GTK_POLICY_NEVER;
+  else
+    g_printerr (_("Unknown scrollbar policy type: %s\n"), value);
+
+  if (option_name[0] == 'h')
+    options.hscroll_policy = pt;
+  else
+    options.vscroll_policy = pt;
 }
 
 #ifndef G_OS_WIN32
@@ -1237,6 +1312,9 @@ yad_options_init (void)
   options.print_xid = FALSE;
 #endif
 
+  options.hscroll_policy = GTK_POLICY_AUTOMATIC;
+  options.vscroll_policy = GTK_POLICY_AUTOMATIC;
+
   /* plug settings */
   options.plug = -1;
   options.tabnum = 0;
@@ -1246,6 +1324,10 @@ yad_options_init (void)
   options.data.window_icon = "yad";
   options.data.width = settings.width;
   options.data.height = settings.height;
+  options.data.use_posx = FALSE;
+  options.data.posx = 0;
+  options.data.use_posy = FALSE;
+  options.data.posy = 0;
   options.data.geometry = NULL;
   options.data.dialog_text = NULL;
   options.data.text_align = GTK_JUSTIFY_LEFT;
@@ -1258,7 +1340,7 @@ yad_options_init (void)
   options.data.buttons = NULL;
   options.data.no_buttons = FALSE;
   options.data.buttons_layout = GTK_BUTTONBOX_END;
-  options.data.borders = -1;
+  options.data.borders = 2;
   options.data.no_markup = FALSE;
   options.data.no_escape = FALSE;
   options.data.always_print = FALSE;
@@ -1276,6 +1358,7 @@ yad_options_init (void)
   options.data.fullscreen = FALSE;
   options.data.splash = FALSE;
   options.data.focus = TRUE;
+  options.data.close_on_unfocus = FALSE;
 
   /* Initialize common data */
   options.common_data.uri = NULL;
@@ -1382,6 +1465,7 @@ yad_options_init (void)
   options.list_data.radiobox = FALSE;
   options.list_data.print_all = FALSE;
   options.list_data.rules_hint = TRUE;
+  options.list_data.grid_lines = GTK_TREE_VIEW_GRID_LINES_NONE;
   options.list_data.print_column = 0;
   options.list_data.hide_column = 0;
   options.list_data.expand_column = -1; // must be -1 for disable expand by default (keep the original behavior)
@@ -1390,7 +1474,11 @@ yad_options_init (void)
   options.list_data.sep_column = 0;
   options.list_data.sep_value = NULL;
   options.list_data.limit = 0;
+  options.list_data.editable_cols = NULL;
+  options.list_data.wrap_width = 0;
+  options.list_data.wrap_cols = NULL;
   options.list_data.ellipsize = PANGO_ELLIPSIZE_NONE;
+  options.list_data.ellipsize_cols = NULL;
   options.list_data.dclick_action = NULL;
   options.list_data.select_action = NULL;
   options.list_data.regex_search = FALSE;

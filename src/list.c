@@ -21,13 +21,14 @@
 #include <stdlib.h>
 
 #include <glib/gprintf.h>
-#include <gdk/gdkkeysyms.h>
 
 #include "yad.h"
 
 static GtkWidget *list_view;
 
 static gint fore_col, back_col, font_col;
+
+static gulong select_hndl = 0;
 
 static gboolean
 list_activate_cb (GtkWidget *widget, GdkEventKey *event, gpointer data)
@@ -44,7 +45,7 @@ list_activate_cb (GtkWidget *widget, GdkEventKey *event, gpointer data)
           if (event->state & GDK_CONTROL_MASK)
             {
               if (options.plug == -1)
-                gtk_dialog_response (GTK_DIALOG (data), YAD_RESPONSE_OK);
+                yad_exit (YAD_RESPONSE_OK);
             }
           else
             return FALSE;
@@ -52,7 +53,7 @@ list_activate_cb (GtkWidget *widget, GdkEventKey *event, gpointer data)
       else
         {
           if (options.plug == -1)
-            gtk_dialog_response (GTK_DIALOG (data), YAD_RESPONSE_OK);
+            yad_exit (YAD_RESPONSE_OK);
         }
 
       return TRUE;
@@ -293,7 +294,7 @@ add_columns (gint n_columns)
         case YAD_COLUMN_SIZE:
         case YAD_COLUMN_FLOAT:
           renderer = gtk_cell_renderer_text_new ();
-          if (options.common_data.editable)
+          if (col->editable)
             {
               g_object_set (G_OBJECT (renderer), "editable", TRUE, NULL);
               g_signal_connect (renderer, "edited", G_CALLBACK (cell_edited_cb), NULL);
@@ -322,7 +323,7 @@ add_columns (gint n_columns)
           break;
         default:
           renderer = gtk_cell_renderer_text_new ();
-          if (options.common_data.editable)
+          if (col->editable)
             {
               g_object_set (G_OBJECT (renderer), "editable", TRUE, NULL);
               g_signal_connect (renderer, "edited", G_CALLBACK (cell_edited_cb), NULL);
@@ -331,7 +332,12 @@ add_columns (gint n_columns)
             column = gtk_tree_view_column_new_with_attributes (col->name, renderer, "text", i, NULL);
           else
             column = gtk_tree_view_column_new_with_attributes (col->name, renderer, "markup", i, NULL);
-          g_object_set (G_OBJECT (renderer), "ellipsize", options.list_data.ellipsize, NULL);
+          g_object_set (G_OBJECT (renderer), "ellipsize", col->ellipsize, NULL);
+          if (col->wrap)
+            {
+              g_object_set (G_OBJECT (renderer), "wrap-width", options.list_data.wrap_width, NULL);
+              g_object_set (G_OBJECT (renderer), "wrap-mode", PANGO_WRAP_WORD_CHAR, NULL);
+            }
           if (fore_col != -1)
             gtk_tree_view_column_add_attribute (column, renderer, "foreground", fore_col);
           if (back_col != -1)
@@ -408,11 +414,17 @@ handle_stdin (GIOChannel * channel, GIOCondition condition, gpointer data)
             }
 
           strip_new_line (string->str);
+
+          /* clear list if ^L received */
           if (string->str[0] == '\014')
             {
-              /* clear list if ^L received */
+              GtkTreeSelection *sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (list_view));
+              if (select_hndl)
+                g_signal_handler_block (G_OBJECT (sel), select_hndl);
               gtk_list_store_clear (GTK_LIST_STORE (model));
               row_count = column_count = 0;
+              if (select_hndl)
+                g_signal_handler_unblock (G_OBJECT (sel), select_hndl);
               continue;
             }
 
@@ -741,7 +753,7 @@ double_click_cb (GtkTreeView * view, GtkTreePath * path, GtkTreeViewColumn * col
             }
         }
       else if (options.plug == -1)
-        gtk_dialog_response (GTK_DIALOG (data), YAD_RESPONSE_OK);
+        yad_exit (YAD_RESPONSE_OK);
     }
 }
 
@@ -955,6 +967,112 @@ row_sep_func (GtkTreeModel * m, GtkTreeIter * it, gpointer data)
   return (strcmp (name, options.list_data.sep_value) == 0);
 }
 
+static inline void
+parse_cols_props ()
+{
+  /* set editable property for columns */
+  if (options.common_data.editable)
+    {
+      if (options.list_data.editable_cols)
+        {
+          gchar **cnum;
+          guint i = 0;
+
+          cnum = g_strsplit (options.list_data.editable_cols, ",", -1);
+
+          while (cnum[i])
+            {
+              gint num = atoi (cnum[i]);
+              if (num)
+                {
+                  YadColumn *col = (YadColumn *) g_slist_nth_data (options.list_data.columns, num - 1);
+                  if (col)
+                    col->editable = TRUE;
+                }
+              i++;
+            }
+          g_strfreev (cnum);
+        }
+      else
+        {
+          GSList *c;
+          for (c = options.list_data.columns; c; c = c->next)
+            {
+              YadColumn *col = (YadColumn *) c->data;
+              col->editable = TRUE;
+            }
+        }
+    }
+
+  /* set wrap property for columns */
+  if (options.list_data.wrap_width > 0)
+    {
+      if (options.list_data.wrap_cols)
+        {
+          gchar **cnum;
+          guint i = 0;
+
+          cnum = g_strsplit (options.list_data.wrap_cols, ",", -1);
+
+          while (cnum[i])
+            {
+              gint num = atoi (cnum[i]);
+              if (num)
+                {
+                  YadColumn *col = (YadColumn *) g_slist_nth_data (options.list_data.columns, num - 1);
+                  if (col)
+                    col->wrap = TRUE;
+                }
+              i++;
+            }
+          g_strfreev (cnum);
+        }
+      else
+        {
+          GSList *c;
+          for (c = options.list_data.columns; c; c = c->next)
+            {
+              YadColumn *col = (YadColumn *) c->data;
+              col->wrap = TRUE;
+            }
+        }
+    }
+
+  /* set ellipsize property for columns */
+  if (options.list_data.ellipsize)
+    {
+      if (options.list_data.ellipsize_cols)
+        {
+          gchar **cnum;
+          guint i = 0;
+
+          cnum = g_strsplit (options.list_data.ellipsize_cols, ",", -1);
+
+          while (cnum[i])
+            {
+              gint num = atoi (cnum[i]);
+              if (num)
+                {
+                  YadColumn *col = (YadColumn *) g_slist_nth_data (options.list_data.columns, num - 1);
+                  if (col)
+                    col->ellipsize = TRUE;
+                }
+              i++;
+            }
+          g_strfreev (cnum);
+        }
+      else
+        {
+          GSList *c;
+          for (c = options.list_data.columns; c; c = c->next)
+            {
+              YadColumn *col = (YadColumn *) c->data;
+              col->ellipsize = TRUE;
+            }
+        }
+    }
+}
+
 GtkWidget *
 list_create_widget (GtkWidget * dlg)
 {
@@ -972,9 +1090,12 @@ list_create_widget (GtkWidget * dlg)
       return NULL;
     }
 
+  parse_cols_props ();
+
+  /* create widget */
   w = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (w), GTK_SHADOW_ETCHED_IN);
-  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (w), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (w), options.hscroll_policy, options.vscroll_policy);
 
   model = create_model (n_columns);
 
@@ -982,6 +1103,7 @@ list_create_widget (GtkWidget * dlg)
   gtk_widget_set_name (list_view, "yad-list-widget");
   gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (list_view), !options.list_data.no_headers);
   gtk_tree_view_set_rules_hint (GTK_TREE_VIEW (list_view), options.list_data.rules_hint);
+  gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (list_view), options.list_data.grid_lines);
   gtk_tree_view_set_reorderable (GTK_TREE_VIEW (list_view), options.common_data.editable);
   g_object_unref (model);
 
@@ -1025,7 +1147,7 @@ list_create_widget (GtkWidget * dlg)
         gtk_tree_selection_set_mode (sel, GTK_SELECTION_MULTIPLE);
 
       if (!options.common_data.multi && options.list_data.select_action)
-        g_signal_connect (G_OBJECT (sel), "changed", G_CALLBACK (select_cb), NULL);
+        select_hndl = g_signal_connect (G_OBJECT (sel), "changed", G_CALLBACK (select_cb), NULL);
 
       g_signal_connect (G_OBJECT (list_view), "row-activated", G_CALLBACK (double_click_cb), dlg);
       g_signal_connect (G_OBJECT (list_view), "key-press-event", G_CALLBACK (list_activate_cb), dlg);

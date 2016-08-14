@@ -29,6 +29,7 @@
 
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
+#include <gdk/gdkkeysyms.h>
 
 #if GTK_CHECK_VERSION(3,0,0)
 #include <gtk/gtkx.h>
@@ -142,7 +143,8 @@ typedef enum {
 typedef enum {
   YAD_PROGRESS_NORMAL = 0,
   YAD_PROGRESS_RTL,
-  YAD_PROGRESS_PULSE
+  YAD_PROGRESS_PULSE,
+  YAD_PROGRESS_PERM
 } YadProgressType;
 
 typedef enum {
@@ -171,6 +173,9 @@ typedef struct {
 typedef struct {
   gchar *name;
   YadColumnType type;
+  gboolean wrap;
+  gboolean ellipsize;
+  gboolean editable;
 } YadColumn;
 
 typedef struct {
@@ -188,6 +193,10 @@ typedef struct {
   gchar *window_icon;
   gint width;
   gint height;
+  gboolean use_posx;
+  gint posx;
+  gboolean use_posy;
+  gint posy;
   gchar *geometry;
   guint timeout;
   gchar *to_indicator;
@@ -217,6 +226,7 @@ typedef struct {
   gboolean fullscreen;
   gboolean splash;
   gboolean focus;
+  gboolean close_on_unfocus;
 } YadData;
 
 typedef struct {
@@ -308,6 +318,7 @@ typedef struct {
   gboolean radiobox;
   gboolean print_all;
   gboolean rules_hint;
+  GtkTreeViewGridLines grid_lines;
   gint print_column;
   gint hide_column;
   gint expand_column;
@@ -316,7 +327,11 @@ typedef struct {
   gint sep_column;
   gchar *sep_value;
   guint limit;
+  gchar *editable_cols;
+  gint wrap_width;
+  gchar *wrap_cols;
   PangoEllipsizeMode ellipsize;
+  gchar *ellipsize_cols;
   gchar *dclick_action;
   gchar *select_action;
   gboolean regex_search;
@@ -461,6 +476,9 @@ typedef struct {
 
   gchar *gtkrc_file;
 
+  GtkPolicyType hscroll_policy;
+  GtkPolicyType vscroll_policy;
+
   gchar *rest_file;
   gchar **extra_data;
 
@@ -513,6 +531,8 @@ extern gint t_sem;
 void yad_options_init (void);
 GOptionContext *yad_create_context (void);
 void yad_set_mode (void);
+void yad_print_result (void);
+void yad_exit (gint id);
 
 GtkWidget *calendar_create_widget (GtkWidget *dlg);
 GtkWidget *color_create_widget (GtkWidget *dlg);
@@ -533,7 +553,7 @@ GtkWidget *progress_create_widget (GtkWidget *dlg);
 GtkWidget *scale_create_widget (GtkWidget *dlg);
 GtkWidget *text_create_widget (GtkWidget *dlg);
 
-gboolean file_confirm_overwrite (GtkDialog *dlg);
+gboolean file_confirm_overwrite (GtkWidget *dlg);
 void notebook_swallow_childs (void);
 void paned_swallow_childs (void);
 void picture_fit_to_window (void);
