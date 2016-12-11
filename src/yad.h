@@ -214,6 +214,7 @@ typedef struct {
   gboolean always_print;
   gboolean selectable_labels;
   GtkButtonBoxStyle buttons_layout;
+  gint def_resp;
   /* window settings */
   gboolean sticky;
   gboolean fixed;
@@ -234,6 +235,7 @@ typedef struct {
   gint month;
   gint year;
   gchar *details;
+  gboolean weeks;
 } YadCalendarData;
 
 typedef struct {
@@ -334,6 +336,7 @@ typedef struct {
   gchar *ellipsize_cols;
   gchar *dclick_action;
   gchar *select_action;
+  gchar *add_action;
   gboolean regex_search;
   gboolean clickable;
   gboolean no_selection;
@@ -396,6 +399,7 @@ typedef struct {
   gboolean hide_value;
   gboolean have_value;
   gboolean invert;
+  gboolean buttons;
   GSList *marks;
 } YadScaleData;
 

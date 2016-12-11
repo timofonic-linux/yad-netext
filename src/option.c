@@ -122,6 +122,8 @@ static GOptionEntry general_options[] = {
     N_("Set window borders"), N_("NUMBER") },
   { "always-print-result", 0, 0, G_OPTION_ARG_NONE, &options.data.always_print,
     N_("Always print result"), NULL },
+  { "response", 0, 0, G_OPTION_ARG_INT, &options.data.def_resp,
+    N_("Set default response for Ctrl+Enter"), N_("NUMBER") },
   { "selectable-labels", 0, 0, G_OPTION_ARG_NONE, &options.data.selectable_labels,
     N_("Dialog text can be selected"), NULL },
   /* window settings */
@@ -142,7 +144,7 @@ static GOptionEntry general_options[] = {
   { "maximized", 0, 0, G_OPTION_ARG_NONE, &options.data.maximized,
     N_("Set window maximized"), NULL },
   { "fullscreen", 0, 0, G_OPTION_ARG_NONE, &options.data.fullscreen,
-    N_("Set window fulscreen"), NULL },
+    N_("Set window fullscreen"), NULL },
   { "no-focus", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &options.data.focus,
     N_("Don't focus dialog window"), NULL },
   { "close-on-unfocus", 0, 0, G_OPTION_ARG_NONE, &options.data.close_on_unfocus,
@@ -152,7 +154,7 @@ static GOptionEntry general_options[] = {
   { "plug", 0, 0, G_OPTION_ARG_INT, &options.plug,
     N_("Special type of dialog for XEMBED"), N_("KEY") },
   { "tabnum", 0, 0, G_OPTION_ARG_INT, &options.tabnum,
-    N_("Tab nubmer of this dialog"), N_("NUMBER") },
+    N_("Tab number of this dialog"), N_("NUMBER") },
 #ifndef G_OS_WIN32
   { "parent-win", 0, 0, G_OPTION_ARG_INT, &options.parent,
     N_("XID of parent window"), "XID" },
@@ -219,6 +221,8 @@ static GOptionEntry calendar_options[] = {
     N_("Set the calendar year"), N_("YEAR") },
   { "details", 0, 0, G_OPTION_ARG_FILENAME, &options.calendar_data.details,
     N_("Set the filename with dates details"), N_("FILENAME") },
+  { "show-weeks", 0, 0, G_OPTION_ARG_NONE, &options.calendar_data.weeks,
+    N_("Show week numbers at the left side of calendar"), NULL },
   { NULL }
 };
 
@@ -416,6 +420,8 @@ static GOptionEntry list_options[] = {
     N_("Set double-click action"), N_("CMD") },
   { "select-action", 0, 0, G_OPTION_ARG_STRING, &options.list_data.select_action,
     N_("Set select action"), N_("CMD") },
+  { "add-action", 0, 0, G_OPTION_ARG_STRING, &options.list_data.add_action,
+    N_("Set add action"), N_("CMD") },
   { "regex-search", 0, 0, G_OPTION_ARG_NONE, &options.list_data.regex_search,
     N_("Use regex in search"), NULL },
   { "no-selection", 0, 0, G_OPTION_ARG_NONE, &options.list_data.no_selection,
@@ -544,6 +550,8 @@ static GOptionEntry scale_options[] = {
     N_("Hide value"), NULL },
   { "invert", 0, 0, G_OPTION_ARG_NONE, &options.scale_data.invert,
     N_("Invert direction"), NULL },
+  { "inc-buttons", 0, 0, G_OPTION_ARG_NONE, &options.scale_data.buttons,
+    N_("Show +/- buttons in scale"), NULL },
   { "mark", 0, 0, G_OPTION_ARG_CALLBACK, add_scale_mark,
     N_("Add mark to scale (may be used multiple times)"), N_("NAME:VALUE") },
   { NULL }
@@ -1345,6 +1353,7 @@ yad_options_init (void)
   options.data.no_escape = FALSE;
   options.data.always_print = FALSE;
   options.data.selectable_labels = FALSE;
+  options.data.def_resp = YAD_RESPONSE_OK;
 
   /* Initialize window options */
   options.data.sticky = FALSE;
@@ -1390,6 +1399,7 @@ yad_options_init (void)
   options.calendar_data.month = -1;
   options.calendar_data.year = -1;
   options.calendar_data.details = NULL;
+  options.calendar_data.weeks = FALSE;
 
   /* Initialize color data */
   options.color_data.init_color = NULL;
@@ -1481,6 +1491,7 @@ yad_options_init (void)
   options.list_data.ellipsize_cols = NULL;
   options.list_data.dclick_action = NULL;
   options.list_data.select_action = NULL;
+  options.list_data.add_action = NULL;
   options.list_data.regex_search = FALSE;
   options.list_data.clickable = TRUE;
   options.list_data.no_selection = FALSE;
@@ -1535,6 +1546,7 @@ yad_options_init (void)
   options.scale_data.hide_value = FALSE;
   options.scale_data.have_value = FALSE;
   options.scale_data.invert = FALSE;
+  options.scale_data.buttons = FALSE;
   options.scale_data.marks = NULL;
 
   /* Initialize text data */

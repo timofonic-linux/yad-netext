@@ -34,9 +34,13 @@
 #include "yad.h"
 
 YadOptions options;
-GtkWidget *dialog = NULL;
+static GtkWidget *dialog = NULL;
 
 static gint ret = YAD_RESPONSE_ESC;
+
+#if GTK_CHECK_VERSION(3,0,0)
+static GtkCssProvider *css = NULL;
+#endif
 
 YadNTabs *tabs;
 gint t_sem;
@@ -64,17 +68,31 @@ sa_usr2 (gint sig)
 static gboolean
 keys_cb (GtkWidget *w, GdkEventKey *ev, gpointer d)
 {
-#if GTK_CHECK_VERSION(2,24,0)
-  if (ev->keyval == GDK_KEY_Escape)
-#else
-  if (ev->keyval == GDK_Escape)
-#endif
+  if (options.plug != -1)
+    return FALSE;
+
+  switch (ev->keyval)
     {
-      if (options.plug == -1 || !options.data.no_escape)
-        yad_exit (YAD_RESPONSE_ESC);
+#if GTK_CHECK_VERSION(2,24,0)
+    case GDK_KEY_Escape:
+#else
+    case GDK_Escape:
+#endif
+      if (!options.data.no_escape)
+         yad_exit (YAD_RESPONSE_ESC);
       return TRUE;
-    }
-  return FALSE;
+#if GTK_CHECK_VERSION(2,24,0)
+    case GDK_KEY_Return:
+    case GDK_KEY_KP_Enter:
+#else
+    case GDK_Return:
+    case GDK_KP_Enter:
+#endif
+      if (ev->state & GDK_CONTROL_MASK)
+        yad_exit (options.data.def_resp);
+       return TRUE;
+     }
+   return FALSE;
 }
 
 static void
@@ -191,6 +209,7 @@ create_layout (GtkWidget *dlg)
           gtk_label_set_line_wrap (GTK_LABEL (text), TRUE);
           gtk_label_set_selectable (GTK_LABEL (text), options.data.selectable_labels);
           gtk_label_set_justify (GTK_LABEL (text), options.data.text_align);
+          gtk_widget_set_state (text, GTK_STATE_NORMAL);
           switch (options.data.text_align)
             {
             case GTK_JUSTIFY_LEFT:
@@ -613,7 +632,7 @@ create_dialog (void)
                   gint sh = gdk_screen_get_height (gdk_screen_get_default ());
                   options.data.posy = sh - wh + options.data.posy;
                 }
-              gtk_window_move (GTK_WINDOW (dlg), options.data.posx, options.data.posy);              
+              gtk_window_move (GTK_WINDOW (dlg), options.data.posx, options.data.posy);
             }
         }
     }
@@ -641,6 +660,11 @@ create_dialog (void)
     }
 #endif
 
+#if GTK_CHECK_VERSION(3,0,0)
+  if (css)
+    gtk_style_context_add_provider (gtk_widget_get_style_context (dlg), css, GTK_STYLE_PROVIDER_PRIORITY_USER);
+#endif
+
   return dlg;
 }
 
@@ -665,6 +689,11 @@ create_plug (void)
   box = create_layout (win);
   if (box)
     gtk_container_add (GTK_CONTAINER (win), box);
+
+#if GTK_CHECK_VERSION(3,0,0)
+  if (css)
+    gtk_style_context_add_provider (gtk_widget_get_style_context (win), css, GTK_STYLE_PROVIDER_PRIORITY_USER);
+#endif
 
   gtk_widget_show_all (win);
 
@@ -782,7 +811,14 @@ main (gint argc, gchar ** argv)
 
   /* parse custom gtkrc */
   if (options.gtkrc_file)
-    gtk_rc_parse (options.gtkrc_file);
+    {
+#if !GTK_CHECK_VERSION(3,0,0)
+      gtk_rc_parse (options.gtkrc_file);
+#else
+      css = gtk_css_provider_new ();
+      gtk_css_provider_load_from_path (css, options.gtkrc_file, NULL);
+#endif
+    }
 
   /* set default icons and icon theme */
   if (options.data.icon_theme)
