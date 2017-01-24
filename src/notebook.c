@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with YAD. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2008-2016, Victor Ananjevsky <ananasik@gmail.com>
+ * Copyright (C) 2008-2017, Victor Ananjevsky <ananasik@gmail.com>
  */
 
 #include <sys/types.h>
@@ -48,6 +48,7 @@ notebook_create_widget (GtkWidget * dlg)
 
   /* create widget */
   w = notebook = gtk_notebook_new ();
+  gtk_widget_set_name (w, "yad-notebook-widget");
   gtk_notebook_set_tab_pos (GTK_NOTEBOOK (w), options.notebook_data.pos);
   gtk_container_set_border_width (GTK_CONTAINER (w), 5);
 

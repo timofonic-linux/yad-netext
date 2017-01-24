@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with YAD. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2008-2016, Victor Ananjevsky <ananasik@gmail.com>
+ * Copyright (C) 2008-2017, Victor Ananjevsky <ananasik@gmail.com>
  */
 
 #include <sys/types.h>
@@ -50,6 +50,7 @@ paned_create_widget (GtkWidget * dlg)
     paned = w = gtk_hpaned_new ();
   else
     paned = w = gtk_vpaned_new ();
+  gtk_widget_set_name (w, "yad-paned-widget");
 
   gtk_paned_set_position (GTK_PANED (w), options.paned_data.splitter);
 
