@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with YAD. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2008-2016, Victor Ananjevsky <ananasik@gmail.com>
+ * Copyright (C) 2008-2017, Victor Ananjevsky <ananasik@gmail.com>
  */
 
 #include <limits.h>
@@ -30,7 +30,6 @@ static WebKitWebView *view;
 static GString *inbuf;
 
 static gboolean is_link = FALSE;
-static gboolean is_loaded = FALSE;
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -73,19 +72,22 @@ load_uri (const gchar * uri)
     g_printerr ("yad_html_load_uri: cannot load uri '%s'\n", uri);
 }
 
-static void
-loaded_cb (WebKitWebView * v, WebKitWebFrame * f, gpointer d)
-{
-  is_loaded = TRUE;
-}
-
 static gboolean
 link_cb (WebKitWebView * v, WebKitWebFrame * f, WebKitNetworkRequest * r,
          WebKitWebNavigationAction * act, WebKitWebPolicyDecision * pd, gpointer d)
 {
-  gchar *uri = (gchar *) webkit_network_request_get_uri (r);
+  gchar *uri;
 
-  if (is_loaded && !options.html_data.browser)
+  if (webkit_web_navigation_action_get_reason (act) != WEBKIT_WEB_NAVIGATION_REASON_LINK_CLICKED)
+    {
+      /* skip handling non clicked reasons */
+      webkit_web_policy_decision_use (pd);
+      return TRUE;
+    }
+
+  uri = (gchar *) webkit_network_request_get_uri (r);
+
+  if (!options.html_data.browser)
     {
       if (options.html_data.print_uri)
         g_printf ("%s\n", uri);
@@ -98,7 +100,44 @@ link_cb (WebKitWebView * v, WebKitWebFrame * f, WebKitNetworkRequest * r,
       webkit_web_policy_decision_ignore (pd);
     }
   else
-    webkit_web_policy_decision_use (pd);
+    {
+      if (options.html_data.uri_cmd)
+        {
+          gint ret = -1;
+          gchar *cmd = g_strdup_printf (options.html_data.uri_cmd, uri);
+          static gchar *vb = NULL, *vm = NULL;
+
+          /* set environment */
+          g_free (vb);
+          vb = g_strdup_printf ("%d", webkit_web_navigation_action_get_button (act));
+          g_setenv ("YAD_HTML_BUTTON", vb, TRUE);
+          g_free (vm);
+          vm = g_strdup_printf ("%d", webkit_web_navigation_action_get_modifier_state (act));
+          g_setenv ("YAD_HTML_KEYS", vm, TRUE);
+
+          /* run handler */
+          g_spawn_command_line_sync (cmd, NULL, NULL, &ret, NULL);
+          switch (ret)
+            {
+            case 0:
+              webkit_web_policy_decision_use (pd);
+              break;
+            case 1:
+              webkit_web_policy_decision_ignore (pd);
+              break;
+            case 2:
+              webkit_web_policy_decision_download (pd);
+              break;
+            default:
+              g_printerr ("html: undefined result of external uri handler\n");
+              webkit_web_policy_decision_ignore (pd);
+              break;
+            }
+          g_free (cmd);
+        }
+      else
+        webkit_web_policy_decision_use (pd);
+    }
 
   return TRUE;
 }
@@ -106,10 +145,7 @@ link_cb (WebKitWebView * v, WebKitWebFrame * f, WebKitNetworkRequest * r,
 static void
 link_hover_cb (WebKitWebView * v, const gchar * t, const gchar * link, gpointer * d)
 {
-  if (link)
-    is_link = TRUE;
-  else
-    is_link = FALSE;
+  is_link = (link != NULL);
 }
 
 static void
@@ -264,7 +300,6 @@ html_create_widget (GtkWidget * dlg)
   GtkWidget *sw;
   WebKitWebSettings *settings;
   SoupSession *sess;
-  const gchar *enc;
 
   sw = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), options.hscroll_policy, options.vscroll_policy);
@@ -272,9 +307,15 @@ html_create_widget (GtkWidget * dlg)
   view = WEBKIT_WEB_VIEW (webkit_web_view_new ());
   gtk_container_add (GTK_CONTAINER (sw), GTK_WIDGET (view));
 
-  settings = webkit_web_view_get_settings (view);
-  g_get_charset (&enc);
-  g_object_set (G_OBJECT (settings), "default-encoding", enc, NULL);
+  settings = webkit_web_settings_new ();
+  g_object_set (G_OBJECT (settings), "default-encoding", g_get_codeset (), NULL);
+  g_object_set (G_OBJECT (settings), "user-agent", options.html_data.user_agent, NULL);
+  if (options.html_data.user_style)
+    {
+      gchar *uri = g_filename_to_uri (options.html_data.user_style, NULL, NULL);
+      g_object_set (G_OBJECT (settings), "user-stylesheet-uri", uri, NULL);
+    }
+  webkit_web_view_set_settings (view, settings);
 
   g_signal_connect (view, "hovering-over-link", G_CALLBACK (link_hover_cb), NULL);
   g_signal_connect (view, "navigation-policy-decision-requested", G_CALLBACK (link_cb), NULL);
@@ -287,8 +328,6 @@ html_create_widget (GtkWidget * dlg)
       if (strcmp (options.data.window_icon, "yad") == 0)
         g_signal_connect (view, "icon-loaded", G_CALLBACK (icon_cb), dlg);
     }
-  else
-    g_signal_connect (view, "document-load-finished", G_CALLBACK (loaded_cb), NULL);
 
   sess = webkit_get_default_session ();
   soup_session_add_feature_by_type (sess, SOUP_TYPE_PROXY_RESOLVER_DEFAULT);

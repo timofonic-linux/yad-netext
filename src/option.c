@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with YAD. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2008-2016, Victor Ananjevsky <ananasik@gmail.com>
+ * Copyright (C) 2008-2017, Victor Ananjevsky <ananasik@gmail.com>
  */
 
 #include <stdlib.h>
@@ -46,6 +46,7 @@ static gboolean set_size (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_posx (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_posy (const gchar *, const gchar *, gpointer, GError **);
 #ifndef G_OS_WIN32
+static gboolean set_xid_file (const gchar *, const gchar *, gpointer, GError **);
 static gboolean parse_signal (const gchar *, const gchar *, gpointer, GError **);
 #endif
 static gboolean add_image_path (const gchar *, const gchar *, gpointer, GError **);
@@ -55,6 +56,12 @@ static gboolean set_scroll_policy (const gchar *, const gchar *, gpointer, GErro
 
 static gboolean about_mode = FALSE;
 static gboolean version_mode = FALSE;
+#ifdef HAVE_SPELL
+static gboolean langs_mode = FALSE;
+#endif
+#ifdef HAVE_SOURCEVIEW
+static gboolean themes_mode = FALSE;
+#endif
 static gboolean calendar_mode = FALSE;
 static gboolean color_mode = FALSE;
 static gboolean dnd_mode = FALSE;
@@ -107,7 +114,7 @@ static GOptionEntry general_options[] = {
   { "icon-theme", 0, G_OPTION_FLAG_NOALIAS, G_OPTION_ARG_STRING, &options.data.icon_theme,
     N_("Use specified icon theme instead of default"), N_("THEME") },
   { "expander", 0, G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK, set_expander,
-    N_("Hide main widget with expander"), N_("TEXT") },
+    N_("Hide main widget with expander"), N_("[TEXT]") },
   { "button", 0, 0, G_OPTION_ARG_CALLBACK, add_button,
     N_("Add dialog button (may be used multiple times)"), N_("NAME:ID") },
   { "no-buttons", 0, 0, G_OPTION_ARG_NONE, &options.data.no_buttons,
@@ -156,12 +163,10 @@ static GOptionEntry general_options[] = {
   { "tabnum", 0, 0, G_OPTION_ARG_INT, &options.tabnum,
     N_("Tab number of this dialog"), N_("NUMBER") },
 #ifndef G_OS_WIN32
-  { "parent-win", 0, 0, G_OPTION_ARG_INT, &options.parent,
-    N_("XID of parent window"), "XID" },
   { "kill-parent", 0, G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK, parse_signal,
-    N_("Send SIGNAL to parent"), N_("SIGNAL") },
-  { "print-xid", 0, 0, G_OPTION_ARG_NONE, &options.print_xid,
-    N_("Print X Window Id to the stderr"), NULL },
+    N_("Send SIGNAL to parent"), N_("[SIGNAL]") },
+  { "print-xid", 0, G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK, set_xid_file,
+    N_("Print X Window Id to the file/stderr"), N_("[FILENAME]") },
 #endif
   { NULL }
 };
@@ -181,6 +186,8 @@ static GOptionEntry common_options[] = {
     N_("Set item separator character"), N_("SEPARATOR") },
   { "editable", 0, 0, G_OPTION_ARG_NONE, &options.common_data.editable,
     N_("Allow changes to text in some cases"), NULL },
+  { "tail", 0, 0, G_OPTION_ARG_NONE, &options.common_data.tail,
+    N_("Autoscroll to end of text"), NULL },
   { "quoted-output", 0, 0, G_OPTION_ARG_NONE, &options.common_data.quoted_output,
     N_("Quote dialogs output"), NULL },
   { "num-output", 0, 0, G_OPTION_ARG_NONE, &options.common_data.num_output,
@@ -236,7 +243,7 @@ static GOptionEntry color_options[] = {
   { "gtk-palette", 0, 0, G_OPTION_ARG_NONE, &options.color_data.gtk_palette,
     N_("Show system palette in color dialog"), NULL },
   { "palette", 0, G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK, add_palette,
-    N_("Set path to palette file. Default - " RGB_FILE), N_("FILENAME") },
+    N_("Set path to palette file. Default - " RGB_FILE), N_("[FILENAME]") },
   { "expand-palette", 0, 0, G_OPTION_ARG_NONE, &options.color_data.expand_palette,
     N_("Expand user palette"), NULL },
   { "mode", 0, 0, G_OPTION_ARG_CALLBACK, set_color_mode,
@@ -340,6 +347,12 @@ static GOptionEntry html_options[] = {
     N_("Set mime type of input stream data"), N_("TYPE") },
   { "encoding", 0, 0, G_OPTION_ARG_STRING, &options.html_data.encoding,
     N_("Set encoding of input stream data"), N_("ENCODING") },
+  { "uri-handler", 0, 0, G_OPTION_ARG_STRING, &options.html_data.uri_cmd,
+    N_("Set external handler for clicked uri"), N_("CMD") },
+  { "user-agent", 0, 0, G_OPTION_ARG_STRING, &options.html_data.user_agent,
+    N_("Set user agent string"), N_("STRING") },
+  { "user-style", 0, 0, G_OPTION_ARG_STRING, &options.html_data.user_style,
+    N_("Set path or uri to user styles"), "URI" },
   { NULL }
 };
 #endif
@@ -426,6 +439,8 @@ static GOptionEntry list_options[] = {
     N_("Use regex in search"), NULL },
   { "no-selection", 0, 0, G_OPTION_ARG_NONE, &options.list_data.no_selection,
     N_("Disable selection"), NULL },
+  { "add-on-top", 0, 0, G_OPTION_ARG_NONE, &options.list_data.add_on_top,
+    N_("Add new records on the top of a list"), NULL },
   { NULL }
 };
 
@@ -457,6 +472,8 @@ static GOptionEntry notebook_options[] = {
     N_("Set position of a notebook tabs (top, bottom, left or right)"), N_("TYPE") },
   { "tab-borders", 0, 0, G_OPTION_ARG_INT, &options.notebook_data.borders,
     N_("Set tab borders"), N_("NUMBER") },
+  { "active-tab", 0, 0, G_OPTION_ARG_INT, &options.notebook_data.active,
+    N_("Set active tab"), N_("NUMBER") },
   { NULL }
 };
 
@@ -521,7 +538,7 @@ static GOptionEntry progress_options[] = {
   { "rtl", 0, 0, G_OPTION_ARG_NONE, &options.progress_data.rtl,
     N_("Right-To-Left progress bar direction"), NULL },
   { "enable-log", 0, G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK, set_progress_log,
-    N_("Show log window"), N_("TEXT") },
+    N_("Show log window"), N_("[TEXT]") },
   { "log-expanded", 0, 0, G_OPTION_ARG_NONE, &options.progress_data.log_expanded,
     N_("Expand log window"), NULL },
   { "log-on-top", 0, 0, G_OPTION_ARG_NONE, &options.progress_data.log_on_top,
@@ -570,8 +587,6 @@ static GOptionEntry text_options[] = {
     N_("Set justification (left, right, center or fill)"), N_("TYPE") },
   { "margins", 0, 0, G_OPTION_ARG_INT, &options.text_data.margins,
     N_("Set text margins"), N_("SIZE") },
-  { "tail", 0, 0, G_OPTION_ARG_NONE, &options.text_data.tail,
-    N_("Autoscroll to end of text"), NULL },
   { "show-cursor", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &options.text_data.hide_cursor,
     N_("Show cursor in read-only mode"), NULL },
   { "show-uri", 0, 0, G_OPTION_ARG_NONE, &options.text_data.uri,
@@ -585,6 +600,8 @@ static GOptionEntry text_options[] = {
 static GOptionEntry source_options[] = {
   { "lang", 0, 0, G_OPTION_ARG_STRING, &options.source_data.lang,
     N_("Use specified langauge for syntax highlighting"), N_("LANG") },
+  { "theme", 0, 0, G_OPTION_ARG_STRING, &options.source_data.theme,
+    N_("Use specified theme"), N_("THEME") },
   { NULL }
 };
 #endif
@@ -595,7 +612,7 @@ static GOptionEntry filter_options[] = {
   { "mime-filter", 0, 0, G_OPTION_ARG_CALLBACK, add_file_filter,
     N_("Sets a mime-type filter"), N_("NAME | MIME1 MIME2 ...") },
   { "image-filter", 0, G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK, add_file_filter,
-    N_("Add filter for images"), N_("NAME") },
+    N_("Add filter for images"), N_("[NAME]") },
   { NULL }
 };
 
@@ -604,6 +621,14 @@ static GOptionEntry misc_options[] = {
     N_("Show about dialog"), NULL },
   { "version", 0, 0, G_OPTION_ARG_NONE, &version_mode,
     N_("Print version"), NULL },
+#ifdef HAVE_SPELL
+  { "show-langs", 0, 0, G_OPTION_ARG_NONE, &langs_mode,
+    N_("Show list of spell languages"), NULL },
+#endif
+#ifdef HAVE_SOURCEVIEW
+  { "show-themes", 0, 0, G_OPTION_ARG_NONE, &themes_mode,
+    N_("Show list of GtkSourceView themes"), NULL },
+#endif
   { "gtkrc", 0, 0, G_OPTION_ARG_FILENAME, &options.gtkrc_file,
     N_("Load additional GTK settings from file"), N_("FILENAME") },
   { "hscroll-policy", 0, 0, G_OPTION_ARG_CALLBACK, set_scroll_policy,
@@ -1159,6 +1184,14 @@ set_scroll_policy (const gchar * option_name, const gchar * value, gpointer data
 
 #ifndef G_OS_WIN32
 static gboolean
+set_xid_file (const gchar * option_name, const gchar * value, gpointer data, GError ** err)
+{
+  options.print_xid = TRUE;
+  if (value && value[0])
+    options.xid_file = g_strdup (value);
+}
+
+static gboolean
 parse_signal (const gchar * option_name, const gchar * value, gpointer data, GError ** err)
 {
   guint sn = 0;
@@ -1304,6 +1337,14 @@ yad_set_mode (void)
     options.mode = YAD_MODE_ABOUT;
   else if (version_mode)
     options.mode = YAD_MODE_VERSION;
+#ifdef HAVE_SPELL
+  else if (langs_mode)
+    options.mode = YAD_MODE_LANGS;
+#endif
+#ifdef HAVE_SOURCEVIEW
+  else if (themes_mode)
+    options.mode = YAD_MODE_THEMES;
+#endif
 }
 
 void
@@ -1315,9 +1356,9 @@ yad_options_init (void)
   options.extra_data = NULL;
   options.gtkrc_file = NULL;
 #ifndef G_OS_WIN32
-  options.parent = 0;
   options.kill_parent = 0;
   options.print_xid = FALSE;
+  options.xid_file = NULL;
 #endif
 
   options.hscroll_policy = GTK_POLICY_AUTOMATIC;
@@ -1376,6 +1417,7 @@ yad_options_init (void)
   options.common_data.item_separator = "!";
   options.common_data.multi = FALSE;
   options.common_data.editable = FALSE;
+  options.common_data.tail = FALSE;
   options.common_data.command = NULL;
   options.common_data.date_format = settings.date_format;
   options.common_data.float_precision = 3;
@@ -1453,6 +1495,9 @@ yad_options_init (void)
   options.html_data.print_uri = FALSE;
   options.html_data.mime = NULL;
   options.html_data.encoding = NULL;
+  options.html_data.uri_cmd = NULL;
+  options.html_data.user_agent = "YAD-Webkit (" VERSION ")";
+  options.html_data.user_style = NULL;
 #endif
 
   /* Initialize icons data */
@@ -1495,6 +1540,7 @@ yad_options_init (void)
   options.list_data.regex_search = FALSE;
   options.list_data.clickable = TRUE;
   options.list_data.no_selection = FALSE;
+  options.list_data.add_on_top = FALSE;
 
   /* Initialize multiprogress data */
   options.multi_progress_data.bars = NULL;
@@ -1504,6 +1550,7 @@ yad_options_init (void)
   options.notebook_data.tabs = NULL;
   options.notebook_data.borders = 5;
   options.notebook_data.pos = GTK_POS_TOP;
+  options.notebook_data.active = 1;
 
   /* Initialize notification data */
   options.notification_data.middle = TRUE;
@@ -1555,14 +1602,13 @@ yad_options_init (void)
   options.text_data.wrap = FALSE;
   options.text_data.justify = GTK_JUSTIFY_LEFT;
   options.text_data.margins = 0;
-  options.text_data.tail = FALSE;
-  options.text_data.uri = FALSE;
   options.text_data.hide_cursor = TRUE;
   options.text_data.uri_color = "blue";
 
 #ifdef HAVE_SOURCEVIEW
-  /* Initialize text data */
+  /* Initialize sourceview data */
   options.source_data.lang = NULL;
+  options.source_data.theme = NULL;
 #endif
 }
 

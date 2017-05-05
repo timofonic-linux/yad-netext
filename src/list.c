@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with YAD. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2008-2016, Victor Ananjevsky <ananasik@gmail.com>
+ * Copyright (C) 2008-2017, Victor Ananjevsky <ananasik@gmail.com>
  */
 
 #include <string.h>
@@ -29,6 +29,19 @@ static GtkWidget *list_view;
 static gint fore_col, back_col, font_col;
 
 static gulong select_hndl = 0;
+
+static inline void
+yad_list_add_row (GtkListStore *m, GtkTreeIter *it)
+{
+  if (options.list_data.add_on_top)
+    gtk_list_store_prepend (m, it);
+  else
+    gtk_list_store_append (m, it);
+
+  if (options.common_data.tail)
+    gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (list_view), gtk_tree_model_get_path (GTK_TREE_MODEL (m), it),
+                                  NULL, FALSE, 1.0, 1.0);
+}
 
 static gboolean
 list_activate_cb (GtkWidget *widget, GdkEventKey *event, gpointer data)
@@ -529,7 +542,7 @@ handle_stdin (GIOChannel * channel, GIOCondition condition, gpointer data)
             }
 
           if (row_count == 0 && column_count == 0)
-            gtk_list_store_append (GTK_LIST_STORE (model), &iter);
+            yad_list_add_row (GTK_LIST_STORE (model), &iter);
           else if (column_count == n_columns)
             {
               /* We're starting a new row */
@@ -540,7 +553,7 @@ handle_stdin (GIOChannel * channel, GIOCondition condition, gpointer data)
                   gtk_tree_model_get_iter_first (model, &iter);
                   gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
                 }
-              gtk_list_store_append (GTK_LIST_STORE (model), &iter);
+              yad_list_add_row (GTK_LIST_STORE (model), &iter);
             }
 
           cell_set_data (&iter, column_count, string->str);
@@ -577,7 +590,7 @@ fill_data (gint n_columns)
         {
           gint j;
 
-          gtk_list_store_append (model, &iter);
+          yad_list_add_row (model, &iter);
           for (j = 0; j < n_columns; j++, i++)
             {
               if (args[i] == NULL)
@@ -746,18 +759,24 @@ add_row_cb (GtkMenuItem * item, gpointer data)
   GtkTreeIter iter;
 
   model = gtk_tree_view_get_model (GTK_TREE_VIEW (list_view));
-  gtk_list_store_append (GTK_LIST_STORE (model), &iter);
+  yad_list_add_row (GTK_LIST_STORE (model), &iter);
 
   if (options.list_data.add_action)
     {
-      gchar *data = NULL;
+      gchar *out = NULL;
       gint exit;
 
-      g_spawn_command_line_sync (options.list_data.add_action, &data, NULL, &exit, NULL);
+      /* hide menu first */
+      gtk_menu_popdown (GTK_MENU (data));
+      while (gtk_events_pending ())
+        gtk_main_iteration ();
+
+      /* run command */
+      g_spawn_command_line_sync (options.list_data.add_action, &out, NULL, &exit, NULL);
       if (exit == 0)
         {
           guint i, n_cols = gtk_tree_model_get_n_columns (model);
-          gchar **lines = g_strsplit (data, "\n", 0);
+          gchar **lines = g_strsplit (out, "\n", 0);
 
           for (i = 0; i < n_cols; i++)
             {
@@ -768,7 +787,7 @@ add_row_cb (GtkMenuItem * item, gpointer data)
             }
           g_strfreev (lines);
         }
-      g_free (data);
+      g_free (out);
     }
 }
 
@@ -855,21 +874,21 @@ popup_menu_cb (GtkWidget * w, GdkEventButton * ev, gpointer data)
                                          gtk_image_new_from_stock (GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
           gtk_widget_show (item);
           gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-          g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_row_cb), NULL);
+          g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_row_cb), menu);
 
           item = gtk_image_menu_item_new_with_label (_("Delete row"));
           gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (item),
                                          gtk_image_new_from_stock (GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
           gtk_widget_show (item);
           gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-          g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (del_row_cb), NULL);
+          g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (del_row_cb), menu);
 
           item = gtk_image_menu_item_new_with_label (_("Duplicate row"));
           gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (item),
                                          gtk_image_new_from_stock (GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
           gtk_widget_show (item);
           gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-          g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (copy_row_cb), NULL);
+          g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (copy_row_cb), menu);
 
           gtk_widget_show (menu);
         }

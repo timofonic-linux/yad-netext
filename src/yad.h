@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with YAD. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2008-2016, Victor Ananjevsky <ananasik@gmail.com>
+ * Copyright (C) 2008-2017, Victor Ananjevsky <ananasik@gmail.com>
  */
 
 #ifndef _YAD_H_
@@ -44,6 +44,8 @@
 #include <gtksourceview/gtksourcebuffer.h>
 #include <gtksourceview/gtksourcelanguage.h>
 #include <gtksourceview/gtksourcelanguagemanager.h>
+#include <gtksourceview/gtksourcestylescheme.h>
+#include <gtksourceview/gtksourcestyleschememanager.h>
 #endif
 
 G_BEGIN_DECLS
@@ -81,7 +83,9 @@ typedef enum {
   YAD_MODE_SCALE,
   YAD_MODE_TEXTINFO,
   YAD_MODE_ABOUT,
-  YAD_MODE_VERSION
+  YAD_MODE_VERSION,
+  YAD_MODE_LANGS,
+  YAD_MODE_THEMES
 } YadDialogMode;
 
 typedef enum {
@@ -296,6 +300,9 @@ typedef struct {
   gboolean print_uri;
   gchar *mime;
   gchar *encoding;
+  gchar *uri_cmd;
+  gchar *user_agent;
+  gchar *user_style;
 } YadHtmlData;
 #endif
 
@@ -340,6 +347,7 @@ typedef struct {
   gboolean regex_search;
   gboolean clickable;
   gboolean no_selection;
+  gboolean add_on_top;
 } YadListData;
 
 typedef struct {
@@ -351,6 +359,7 @@ typedef struct {
   GSList *tabs;
   guint borders;
   GtkPositionType pos;
+  guint active;
 } YadNotebookData;
 
 typedef struct {
@@ -409,7 +418,6 @@ typedef struct {
   gboolean wrap;
   GtkJustification justify;
   gint margins;
-  gboolean tail;
   gboolean uri;
   gboolean hide_cursor;
   gchar *uri_color;
@@ -418,6 +426,7 @@ typedef struct {
 #ifdef HAVE_SOURCEVIEW
 typedef struct {
   gchar *lang;
+  gchar *theme;
 } YadSourceData;
 #endif
 
@@ -429,6 +438,7 @@ typedef struct {
   gboolean editable;
   gboolean multi;
   gboolean vertical;
+  gboolean tail;
   gchar *command;
   gchar *date_format;
   guint float_precision;
@@ -490,9 +500,9 @@ typedef struct {
   guint tabnum;
 
 #ifndef G_OS_WIN32
-  guint64 parent;
   guint kill_parent;
   gboolean print_xid;
+  gchar *xid_file;
 #endif
 } YadOptions;
 
@@ -604,6 +614,9 @@ gchar *escape_str (gchar *str);
 gchar *escape_char (gchar *str, gchar ch);
 
 gboolean check_complete (GtkEntryCompletion *c, const gchar *key, GtkTreeIter *iter, gpointer data);
+
+void show_langs ();
+void show_themes ();
 
 static inline void
 strip_new_line (gchar * str)

@@ -1,3 +1,9 @@
+yad (0.390.N) xenial; urgency=medium
+
+  * release 0.39.0
+
+ -- Marcin Mach  <netbit73@gmail.com>  Fri, 5 May 2017 12:35:18 +0200
+
 yad (0.382.N) xenial; urgency=medium
 
   * release 0.38.2

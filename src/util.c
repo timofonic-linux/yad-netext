@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with YAD. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2008-2016, Victor Ananjevsky <ananasik@gmail.com>
+ * Copyright (C) 2008-2017, Victor Ananjevsky <ananasik@gmail.com>
  */
 
 #ifndef _GNU_SOURCE
@@ -560,3 +560,35 @@ check_complete (GtkEntryCompletion *c, const gchar *key, GtkTreeIter *iter, gpoi
 
   return found;
 }
+
+#ifdef HAVE_SPELL
+void
+show_langs ()
+{
+  GList *lng;
+
+  for (lng = gtk_spell_checker_get_language_list (); lng; lng = lng->next)
+    g_print ("%s\n", lng->data);
+}
+#endif
+
+#ifdef HAVE_SOURCEVIEW
+void
+show_themes ()
+{
+  GtkSourceStyleSchemeManager *sm;
+  const gchar **si;
+  guint i = 0;
+
+  sm = gtk_source_style_scheme_manager_get_default ();
+  if ((si = (const gchar **) gtk_source_style_scheme_manager_get_scheme_ids (sm)) == NULL)
+    return;
+
+  while (si[i])
+    {
+      GtkSourceStyleScheme *s = gtk_source_style_scheme_manager_get_scheme (sm, si[i]);
+      g_print ("%s\n", gtk_source_style_scheme_get_name (s));
+      i++;
+    }
+}
+#endif

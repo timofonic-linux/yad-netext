@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with YAD. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2008-2016, Victor Ananjevsky <ananasik@gmail.com>
+ * Copyright (C) 2008-2017, Victor Ananjevsky <ananasik@gmail.com>
  */
 
 #include <errno.h>
@@ -344,7 +344,7 @@ handle_stdin (GIOChannel * channel, GIOCondition condition, gpointer data)
           else
             gtk_text_buffer_insert (GTK_TEXT_BUFFER (text_buffer), &end, string->str, string->len);
 
-          if (options.text_data.tail)
+          if (options.common_data.tail)
             {
               while (gtk_events_pending ())
                 gtk_main_iteration ();
@@ -500,6 +500,44 @@ text_create_widget (GtkWidget * dlg)
         gtk_widget_modify_base (text_view, GTK_STATE_NORMAL, &clr);
 #endif
     }
+
+#ifdef HAVE_SOURCEVIEW
+  if (options.source_data.theme)
+    {
+      GtkSourceStyleScheme *scheme = NULL;
+      GtkSourceStyleSchemeManager *mgr;
+      const gchar **ids;
+
+      mgr = gtk_source_style_scheme_manager_get_default ();
+      ids = (const gchar **) gtk_source_style_scheme_manager_get_scheme_ids (mgr);
+      if (ids)
+        {
+          gint i;
+          gboolean found = FALSE;
+
+          for (i = 0; ids[i]; i++)
+            {
+              const gchar *name;
+
+              scheme = gtk_source_style_scheme_manager_get_scheme (mgr, ids[i]);
+              name = gtk_source_style_scheme_get_name (scheme);
+              if (strcmp (name, options.source_data.theme) == 0)
+                {
+                  found = TRUE;
+                  break;
+                }
+            }
+
+          if (!found)
+            scheme = NULL;
+        }
+
+      if (scheme)
+        gtk_source_buffer_set_style_scheme (GTK_SOURCE_BUFFER (text_buffer), scheme);
+      else
+        g_printerr (_("Theme %s not found\n"), options.source_data.theme);
+    }
+#endif
 
   /* set font */
   if (options.common_data.font)

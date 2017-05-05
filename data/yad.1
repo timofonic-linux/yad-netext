@@ -1,4 +1,4 @@
-.TH YAD 1 "May 22, 2016"
+.TH YAD 1 "February 8, 2017"
 .SH NAME
 yad \- display GTK+ dialogs in shell scripts
 
@@ -104,13 +104,12 @@ Show timeout indicator in given position. Positions are \fItop\fP, \fIbottom\fP,
 Style of indicator may be set through the gtkrc file.
 See \fIhttp://code.google.com/p/yad/wiki/TimeoutIndicator\fP for details.
 .TP
-.B \-\-parent-win=\fIXID\fP
-Specify a parent window for the dialog. This makes \fIYAD\fP possible to use as embedded GUI tool.
-.TP
-.B \-\-kill-parent\fI[=SIGNAL]\fP
+.B \-\-kill-parent=\fI[SIGNAL]\fP
 Send SIGNAL to parent process. Default value of SIGNAL is a SIGTERM.
 SIGNAL may be specified by it's number or symbolic name with or without SIG prefix.
 See signal(7) for details about signals.
+.TP \-\-print-xid=\fI[FILENAME]\fP
+Output X Window ID of a yad's window to the specified file or stderr.
 .TP
 .B \-\-plug=\fIKEY\fP
 Run dialog in plug mode for swallow as a notebook tab. See \fINOTEBOOK\fP section for more.
@@ -134,7 +133,7 @@ Show image above main widget instead of left. This option is always on for print
 .B \-\-icon-theme=\fITHEME\fP
 Use specified GTK icon theme instead of default.
 .TP
-.B \-\-expander=\fITEXT\fP
+.B \-\-expander=\fI[TEXT]\fP
 Hide main widget with expander. \fITEXT\fP is an optional argument with expander's label.
 .TP
 .B \-\-button=\fIBUTTON:ID\fP
@@ -230,7 +229,7 @@ Set the policy type for vertical scrollbars. \fITYPE\fP can be one of the \fIaut
 Enable spell checking in textview widgets
 .TP
 .B \-\-spell-lang=\fILANGUAGE\fP
-Set spell checking language to \fILANGUAGE\fP. By default language guesses from current locale.
+Set spell checking language to \fILANGUAGE\fP. By default language guesses from current locale. Use option \fI\-\-show-langs\fP for get list of all possible languages.
 
 .SS Calendar options
 .TP
@@ -273,7 +272,7 @@ Show extra information about color in returned string.
 .B \-\-alpha
 Add opacity to output color string.
 .TP
-.B \-\-palette\fI[=FILENAME]\fP
+.B \-\-palette=\fI[FILENAME]\fP
 Show palette and set predefined colors from given filename.
 By default used \fI/etc/X11/rgb.txt\fP.
 .TP
@@ -393,7 +392,7 @@ Activate save mode.
 .B \-\-separator=\fISTRING\fP
 Specify separator character when returning multiple filenames.
 .TP
-.B \-\-confirm\-overwrite\fI[=TEXT]\fP
+.B \-\-confirm\-overwrite=\fI[TEXT]\fP
 Confirm file selection if filename already exists.
 Optional argument is a text for confirmation dialog.
 .TP
@@ -526,6 +525,15 @@ Set mime type of data passed to standard input to \fIMIME\fP. Default is \fItext
 .TP
 .B \-\-encodintg=\fIENCODING\fP
 Set encoding of data passed to standard input to \fIENCODING\fP. Default is \fIUTF-8\fP.
+.TP
+.B \-\-uri-handler=\fICMD\fP
+Set external handler for clicked uri. \fI%s\fP will be replaced by activated uri. Return code of the \fICMD\fP must be \fI0\fP for keep working, \fI1\fP for ignoring uri and \fI2\fP for downloading uri. This option works only in browser mode. There are two environment variables available in handler - \fIYAD_HTML_BUTTON\fP with value of pressed mouse button and \fIYAD_HTML_STATE\fP with value of bitmask with the the state of the modifier keys.
+.TP
+.B \-\-user-agent=\fISTRING\fP
+Set user agent string. Default is \fIYAD-Webkit (@VERSION@)\fP
+.TP
+.B \-\-user-style=\fIURI\fP
+Set path or uri to custom user styles. Path to local file can be an absolute file name or uri with \fIfile://\fP prefix.
 
 .SS List options
 .TP
@@ -642,6 +650,12 @@ Output values will be shell-style quoted.
 .B \-\-float-precision=\fINUMBER\fP
 Set precision of floating point numbers. By default precision is three digits after point.
 .TP
+.B \-\-add-on-top
+Add new records at the top of the list.
+.TP
+.B \-\-tail
+Autoscroll to the end of the list when a new row will be added.
+.TP
 Sending FormFeed character to list clears it. This symbol may be sent as \fIecho \-e '\\f'\fP.
 
 .SS Multi progress bars dialog options
@@ -682,6 +696,9 @@ Set the tabs position. Value may be \fItop\fP, \fIbottom\fP, \fIleft\fP, or \fIr
 .TP
 .B \-\-tab-borders=\fINUMBER\fP
 Set the borders width around widget in tabs.
+.TP
+.B \-\-active-tab=\fINUMBER\fP
+Set active tab.
 .PP
 See \fBNOTEBOOK and PANED\fP section for more about notebook dialog.
 
@@ -849,6 +866,9 @@ Set color for links. Default is \fIblue\fP.
 .B \-\-lang=LANGUAGE
 Highlight syntax for specified \fILANGUAGE\fP. This option works only if yad builds with gtksourceview.
 .TP
+.B \-\-theme=THEME
+Set used theme to \fITHEME\fP. This option works only if yad builds with gtksourceview. Use option \fI\-\-show-themes\fP for get list of all available themes.
+.TP
 .B \-\-listen
 Listen data from stdin even if filename was specified.
 
@@ -920,6 +940,12 @@ Display an about dialog.
 .TP
 .B \-\-version
 Show version of program.
+.TP
+.B \-\-show-langs
+Show list of possible languages for spell checking. Available only if yad builds with \fIGtkSpell\fP support.
+.TP
+.B \-\-show-themes
+Show list of possible GtkSourceView themes. Available only if yad builds with \fIGtkSourceView\fP support.
 
 .PP
 Also the standard GTK+ options are accepted.

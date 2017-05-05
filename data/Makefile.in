@@ -266,6 +266,7 @@ INTLTOOL_V_MERGE = @INTLTOOL_V_MERGE@
 INTLTOOL_V_MERGE_OPTIONS = @INTLTOOL_V_MERGE_OPTIONS@
 INTLTOOL__v_MERGE_ = @INTLTOOL__v_MERGE_@
 INTLTOOL__v_MERGE_0 = @INTLTOOL__v_MERGE_0@
+INTL_MACOSX_LIBS = @INTL_MACOSX_LIBS@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
@@ -354,7 +355,7 @@ desktop_in_files = yad-icon-browser.desktop.in
 dist_man_MANS = yad.1
 m4dir = $(datadir)/aclocal
 m4_DATA = yad.m4
-EXTRA_DIST = $(desktop_in_files) zenity.sh notify-send get-lang.c
+EXTRA_DIST = $(desktop_in_files) zenity.sh notify-send
 DISTCLEAN_FILES = $(desktop_DATA) $(m4_DATA) yad.spec
 all: all-recursive
 
