@@ -1,4 +1,4 @@
-.TH YAD 1 "February 8, 2017"
+.TH YAD 1 "June 3, 2017"
 .SH NAME
 yad \- display GTK+ dialogs in shell scripts
 
@@ -157,6 +157,9 @@ Don't use pango markup in dialog's text.
 .B \-\-no-escape
 Don't close dialog if \fIEscape\fP was pressed.
 .TP
+.B \-\-escape-ok
+\fIEscape\fP acts like pressing \fIOK\fP button.
+.TP
 .B \-\-always-print-result
 Print result for aby of the return codes. This options doesn't work if timeout was reached or \fIEscape\fP was pressed.
 .TP
@@ -214,7 +217,7 @@ Add specified path to the standard list of directories for looking for icons. Th
 Read extra arguments from given file instead of command line. Each line of a file treats as a single argument.
 .TP
 .B \-\-response=\fINUMBER\fP
-Set default response value for Ctrl+Enter action.
+Set default exit code to \fINUMBER\fP instead of \fI0\fP.
 .TP
 .B \-\-gtkrc=\fIFILENAME\fP
 Read and parse additional GTK+ settings from given file. This option doesn't work with GTK+-3.x builds.
@@ -289,8 +292,11 @@ In RGBA mode opacity have values from 0.0 to 1.0.
 Use dialog text as a tooltip for Drag-and-Drop box.
 .TP
 .B \-\-command=\fICMD\fP
-Run command when data received. Data strings pass to command as an argument.
+Run command when data received. Data strings pass to command as an argument or replace \fI%s\fP modifier in a command.
 By default data just prints to stdout.
+.TP
+.B \-\-exit-on-drop=\fINUMBER\fP
+Exit after \fINUMBER\fP of drops was reached. 0 means infinite number of drops, this is the default.
 
 .SS Text entry options
 .TP
@@ -360,6 +366,7 @@ Sort items in descending order. If data reads from stdin this option is useless 
 .B \-\-listen
 Read data from stdin. Data must be in order - \fIName\fP, \fITooltip\fP, \fIIcon\fP, \fICommand\fP, \fIInTerm\fP
 separated by newline. \fIInTerm\fP is a case insensitive boolean constant (\fITRUE\fP or \fIFALSE\fP).
+Sending \fIFormFeed\fP character clears iconbox.
 .TP
 .B \-\-item-width
 Set items width.
@@ -656,6 +663,9 @@ Add new records at the top of the list.
 .B \-\-tail
 Autoscroll to the end of the list when a new row will be added.
 .TP
+.B \-\-iec-format
+Use IEC (base 1024) units with for size values. With this option values will have suffixes KiB, MiB, GiB.
+.TP
 Sending FormFeed character to list clears it. This symbol may be sent as \fIecho \-e '\\f'\fP.
 
 .SS Multi progress bars dialog options
@@ -724,6 +734,9 @@ Disable exit on middle click.
 .TP
 .B \-\-hidden
 Doesn't show icon at startup.
+.TP
+.B \-\-icon-size=\fISIZE\fP
+Set notification icon size to \fISIZE\fP. This option doesn't works for themed icons.
 .PP
 See \fBNOTIFICATION\fP section for more about separators.
 
@@ -1008,7 +1021,7 @@ dialog children.
 .B YAD_XID
 This variable sets to the value of current dialog's X Window ID and accessible in all
 dialog children. This variable is not set in print and notification dialogs,
-and in a dialogs which acts as a notebook children.
+and in a dialogs which acts as a notebook or paned children.
 
 .SH USER DEFINED SIGNALS
 .TP

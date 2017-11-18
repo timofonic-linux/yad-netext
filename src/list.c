@@ -58,7 +58,7 @@ list_activate_cb (GtkWidget *widget, GdkEventKey *event, gpointer data)
           if (event->state & GDK_CONTROL_MASK)
             {
               if (options.plug == -1)
-                yad_exit (YAD_RESPONSE_OK);
+                yad_exit (options.data.def_resp);
             }
           else
             return FALSE;
@@ -66,7 +66,7 @@ list_activate_cb (GtkWidget *widget, GdkEventKey *event, gpointer data)
       else
         {
           if (options.plug == -1)
-            yad_exit (YAD_RESPONSE_OK);
+            yad_exit (options.data.def_resp);
         }
 
       return TRUE;
@@ -261,7 +261,7 @@ size_col_format (GtkTreeViewColumn *col, GtkCellRenderer *cell, GtkTreeModel *mo
 
   gtk_tree_model_get (model, iter, GPOINTER_TO_INT (data), &val, -1);
 #if GLIB_CHECK_VERSION(2,30,0)
-  sz = g_format_size (val);
+  sz = g_format_size_full (val, options.common_data.size_fmt);
 #elif  GLIB_CHECK_VERSION(2,16,0)
   sz = g_format_size_for_display (val);
 #else
@@ -428,7 +428,8 @@ cell_set_data (GtkTreeIter *it, guint num, gchar *data)
         break;
       }
     default:
-      gtk_list_store_set (GTK_LIST_STORE (model), it, num, data, -1);
+      if (data && *data)
+        gtk_list_store_set (GTK_LIST_STORE (model), it, num, data, -1);
       break;
     }
 }
@@ -706,7 +707,7 @@ double_click_cb (GtkTreeView * view, GtkTreePath * path, GtkTreeViewColumn * col
             }
         }
       else if (options.plug == -1)
-        yad_exit (YAD_RESPONSE_OK);
+        yad_exit (options.data.def_resp);
     }
 }
 

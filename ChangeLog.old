@@ -1,3 +1,70 @@
+2017-08-30 08:31  v1c0nt
+
+	* src/icons.c: fix cleanup icons view dialog
+
+2017-08-29 13:08  v1c0nt
+
+	* data/yad.1, src/icons.c: add FormFeed to icons view dialog
+
+2017-07-03 12:07  v1c0nt
+
+	* data/yad.1: fix man page
+
+2017-07-03 12:04  v1c0nt
+
+	* data/yad.1, po/ru.po, po/uk.po, src/main.c, src/notification.c,
+	  src/option.c, src/yad.h: add --escape-ok option
+
+2017-07-02 13:41  v1c0nt
+
+	* configure.ac, src/html.c: revert some trash from previous commit
+
+2017-07-02 13:38  v1c0nt
+
+	* configure.ac, src/entry.c, src/html.c: fix parse numeric
+	  arguments in entry dialog
+
+2017-06-22 11:00  v1c0nt
+
+	* TODO: update todo
+
+2017-06-22 10:53  v1c0nt
+
+	* TODO: update todo
+
+2017-05-29 10:49  v1c0nt
+
+	* src/print.c:
+
+2017-05-29 10:25  v1c0nt
+
+	* data/yad.1, po/ru.po, po/uk.po: update documentation
+
+2017-05-29 10:22  v1c0nt
+
+	* src/calendar.c, src/dnd.c, src/entry.c, src/file.c, src/form.c,
+	  src/list.c, src/main.c, src/multi-progress.c, src/option.c,
+	  src/progress.c: use --response option to set default exit code
+
+2017-05-29 09:39  v1c0nt
+
+	* src/option.c: improve previous commit
+
+2017-05-29 09:36  v1c0nt
+
+	* data/yad.1, po/ru.po, po/uk.po, src/list.c, src/option.c,
+	  src/yad.h: add --iec-format option
+
+2017-05-20 08:26  v1c0nt
+
+	* data/yad.1, po/ru.po, po/uk.po, src/dnd.c, src/option.c,
+	  src/yad.h: add --exit-on-drop options. thanks to Christopher
+	  Oliver
+
+2017-04-26 16:59  v1c0nt
+
+	* ChangeLog, NEWS, configure.ac: release 0.39.0
+
 2017-04-26 15:15  v1c0nt
 
 	* data/yad.1, po/ru.po, po/uk.po, src/list.c: add --tail option to

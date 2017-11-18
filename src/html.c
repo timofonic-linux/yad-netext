@@ -23,6 +23,7 @@
 #include "yad.h"
 
 #include <glib/gprintf.h>
+
 #include <webkit/webkit.h>
 
 static WebKitWebView *view;

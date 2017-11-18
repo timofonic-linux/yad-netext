@@ -215,6 +215,7 @@ typedef struct {
   gboolean no_buttons;
   gboolean no_markup;
   gboolean no_escape;
+  gboolean escape_ok;
   gboolean always_print;
   gboolean selectable_labels;
   GtkButtonBoxStyle buttons_layout;
@@ -255,6 +256,7 @@ typedef struct {
 
 typedef struct {
   gboolean tooltip;
+  guint exit_on_drop;
 } YadDNDData;
 
 typedef struct {
@@ -366,6 +368,7 @@ typedef struct {
   gboolean middle;
   gboolean hidden;
   gchar *menu;
+  guint icon_size;
 } YadNotificationData;
 
 typedef struct {
@@ -448,6 +451,9 @@ typedef struct {
   gboolean show_hidden;
   gboolean quoted_output;
   gboolean num_output;
+#if GLIB_CHECK_VERSION(2,30,0)
+  GFormatSizeFlags size_fmt;
+#endif
   YadCompletionType complete;
   GList *filters;
   key_t key;

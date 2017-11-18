@@ -53,6 +53,9 @@ static gboolean add_image_path (const gchar *, const gchar *, gpointer, GError *
 static gboolean set_complete_type (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_grid_lines (const gchar *, const gchar *, gpointer, GError **);
 static gboolean set_scroll_policy (const gchar *, const gchar *, gpointer, GError **);
+#if GLIB_CHECK_VERSION(2,30,0)
+static gboolean set_size_format (const gchar *, const gchar *, gpointer, GError **);
+#endif
 
 static gboolean about_mode = FALSE;
 static gboolean version_mode = FALSE;
@@ -125,12 +128,14 @@ static GOptionEntry general_options[] = {
     N_("Don't use pango markup language in dialog's text"), NULL },
   { "no-escape", 0, 0, G_OPTION_ARG_NONE, &options.data.no_escape,
     N_("Don't close dialog if Escape was pressed"), NULL },
+  { "escape-ok", 0, 0, G_OPTION_ARG_NONE, &options.data.escape_ok,
+    N_("Escape acts like OK button"), NULL },
   { "borders", 0, 0, G_OPTION_ARG_INT, &options.data.borders,
     N_("Set window borders"), N_("NUMBER") },
   { "always-print-result", 0, 0, G_OPTION_ARG_NONE, &options.data.always_print,
     N_("Always print result"), NULL },
   { "response", 0, 0, G_OPTION_ARG_INT, &options.data.def_resp,
-    N_("Set default response for Ctrl+Enter"), N_("NUMBER") },
+    N_("Set default return code"), N_("NUMBER") },
   { "selectable-labels", 0, 0, G_OPTION_ARG_NONE, &options.data.selectable_labels,
     N_("Dialog text can be selected"), NULL },
   /* window settings */
@@ -208,6 +213,10 @@ static GOptionEntry common_options[] = {
     N_("Identifier of embedded dialogs"), N_("KEY") },
   { "complete", 0, 0, G_OPTION_ARG_CALLBACK, set_complete_type,
     N_("Set extended completion for entries (any, all, or regex)"), N_("TYPE") },
+#if GLIB_CHECK_VERSION(2,30,0)
+  { "iec-format", 0, G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK, set_size_format,
+    N_("Use IEC (base 1024) units with for size values"), NULL },
+#endif
 #ifdef HAVE_SPELL
   { "enable-spell", 0, 0, G_OPTION_ARG_NONE, &options.common_data.enable_spell,
     N_("Enable spell check for text"), NULL },
@@ -260,6 +269,8 @@ static GOptionEntry dnd_options[] = {
     N_("Display drag-n-drop box"), NULL },
   { "tooltip", 0, 0, G_OPTION_ARG_NONE, &options.dnd_data.tooltip,
     N_("Use dialog text as tooltip"), NULL },
+  { "exit-on-drop", 0, 0, G_OPTION_ARG_INT, &options.dnd_data.exit_on_drop,
+    N_("Exit after NUMBER of drops"), N_("NUMBER") },
   { NULL }
 };
 
@@ -486,6 +497,8 @@ static GOptionEntry notification_options[] = {
     N_("Disable exit on middle click"), NULL },
   { "hidden", 0, 0, G_OPTION_ARG_NONE, &options.notification_data.hidden,
     N_("Doesn't show icon at startup"), NULL },
+  { "icon-size", 0, 0, G_OPTION_ARG_INT, &options.notification_data.icon_size,
+    N_("Set icon size for fully specified icons (default - 16)"), N_("SIZE") },
   { NULL }
 };
 
@@ -1182,6 +1195,14 @@ set_scroll_policy (const gchar * option_name, const gchar * value, gpointer data
     options.vscroll_policy = pt;
 }
 
+#if GLIB_CHECK_VERSION(2,30,0)
+static gboolean
+set_size_format (const gchar * option_name, const gchar * value, gpointer data, GError ** err)
+{
+  options.common_data.size_fmt = G_FORMAT_SIZE_IEC_UNITS;
+}
+#endif
+
 #ifndef G_OS_WIN32
 static gboolean
 set_xid_file (const gchar * option_name, const gchar * value, gpointer data, GError ** err)
@@ -1392,6 +1413,7 @@ yad_options_init (void)
   options.data.borders = 2;
   options.data.no_markup = FALSE;
   options.data.no_escape = FALSE;
+  options.data.escape_ok = FALSE;
   options.data.always_print = FALSE;
   options.data.selectable_labels = FALSE;
   options.data.def_resp = YAD_RESPONSE_OK;
@@ -1431,6 +1453,9 @@ yad_options_init (void)
   options.common_data.filters = NULL;
   options.common_data.key = -1;
   options.common_data.complete = YAD_COMPLETE_SIMPLE;
+#if GLIB_CHECK_VERSION(2,30,0)
+  options.common_data.size_fmt = G_FORMAT_SIZE_DEFAULT;
+#endif
 #ifdef HAVE_SPELL
   options.common_data.enable_spell = FALSE;
   options.common_data.spell_lang = NULL;
@@ -1455,6 +1480,7 @@ yad_options_init (void)
 
   /* Initialize DND data */
   options.dnd_data.tooltip = FALSE;
+  options.dnd_data.exit_on_drop = 0;
 
   /* Initialize entry data */
   options.entry_data.entry_text = NULL;
@@ -1556,6 +1582,7 @@ yad_options_init (void)
   options.notification_data.middle = TRUE;
   options.notification_data.hidden = FALSE;
   options.notification_data.menu = NULL;
+  options.notification_data.icon_size = 16;
 
   /* Initialize paned data */
   options.paned_data.orient = GTK_ORIENTATION_VERTICAL;

@@ -52,7 +52,7 @@ sa_usr1 (gint sig)
   if (options.plug != -1)
     yad_print_result ();
   else
-    yad_exit (YAD_RESPONSE_OK);
+    yad_exit (options.data.def_resp);
 }
 
 static void
@@ -78,7 +78,9 @@ keys_cb (GtkWidget *w, GdkEventKey *ev, gpointer d)
 #else
     case GDK_Escape:
 #endif
-      if (!options.data.no_escape)
+      if (options.data.escape_ok)
+          yad_exit (options.data.def_resp);
+      else if (!options.data.no_escape)
          yad_exit (YAD_RESPONSE_ESC);
       return TRUE;
 #if GTK_CHECK_VERSION(2,24,0)
